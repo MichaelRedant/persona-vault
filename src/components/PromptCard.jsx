@@ -6,7 +6,7 @@ import ConfirmDialog from './ConfirmDialog';
 import { AiFillStar, AiOutlineStar } from 'react-icons/ai';
 import { FiEdit2, FiTrash2, FiDownload, FiCopy } from 'react-icons/fi';
 
-export default function PromptCard({ prompt, onToggleFavorite, onDelete, onEdit, onShowToast }) {
+export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDelete, onEdit, onShowToast }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleCopy = (text) => {
@@ -21,7 +21,6 @@ export default function PromptCard({ prompt, onToggleFavorite, onDelete, onEdit,
       });
   };
 
-  // ✅ Robust tags parsing
   const tagsArray = Array.isArray(prompt.tags)
     ? prompt.tags
     : typeof prompt.tags === 'string'
@@ -29,23 +28,26 @@ export default function PromptCard({ prompt, onToggleFavorite, onDelete, onEdit,
       : [];
 
   return (
-    <div className="bg-gradient-to-tr from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 mb-6 transition-transform transform hover:scale-[1.02] hover:shadow-xl duration-200 ease-in-out animate-fadeIn">
+    <div className={`bg-gradient-to-tr from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 ${compactMode ? 'p-2 mb-3' : 'p-6 mb-6'} transition-transform transform hover:scale-[1.02] hover:shadow-xl duration-200 ease-in-out animate-fadeIn`}>
 
       <div className="flex justify-between items-start flex-wrap sm:flex-nowrap">
         {/* Content */}
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{prompt.title}</h2>
-          <p className="text-sm text-gray-500 mb-2">{prompt.content}</p>
-          <div className="flex flex-wrap gap-2">
-            {tagsArray.map(tag => (
-              <span
-                key={tag}
-                className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+          <h2 className={`font-bold text-gray-900 dark:text-white mb-1 leading-tight ${compactMode ? 'text-base' : 'text-xl'}`}>{prompt.title}</h2>
+          <p className={`text-gray-500 mb-2 leading-tight ${compactMode ? 'text-xs' : 'text-base'}`}>{prompt.content}</p>
+
+          {!compactMode && (
+            <div className="flex flex-wrap gap-2">
+              {tagsArray.map(tag => (
+                <span
+                  key={tag}
+                  className="font-medium rounded-full px-2.5 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Actions */}
@@ -72,7 +74,7 @@ export default function PromptCard({ prompt, onToggleFavorite, onDelete, onEdit,
             title="Edit"
           />
           <Button
-            onClick={() => setConfirmOpen(true)} // ⬅️ Trigger ConfirmDialog
+            onClick={() => setConfirmOpen(true)}
             variant="danger"
             icon={<FiTrash2 className="w-5 h-5" />}
             className="w-10 h-10 text-xl p-0 flex items-center justify-center"
@@ -88,8 +90,10 @@ export default function PromptCard({ prompt, onToggleFavorite, onDelete, onEdit,
         </div>
       </div>
 
-      {/* Try in Platform → under card */}
-      <TryInPlatformButtons promptText={prompt.content} onShowToast={onShowToast} />
+      {/* TryInPlatformButtons → in CompactMode weghalen */}
+      {!compactMode && (
+        <TryInPlatformButtons promptText={prompt.content} onShowToast={onShowToast} />
+      )}
 
       {/* ConfirmDialog */}
       <ConfirmDialog

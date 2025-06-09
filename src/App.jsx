@@ -14,6 +14,7 @@ import AuthLayout from './components/AuthLayout';
 import { jwtDecode } from 'jwt-decode';
 import Footer from './components/Footer';
 import ProfileModal from './components/ProfileModal';
+import SettingsModal from './components/SettingsModal';
 
 import './index.css';
 
@@ -25,11 +26,28 @@ function App() {
   const [promptSortOption, setPromptSortOption] = useState('newest');
   const [globalToastMessage, setGlobalToastMessage] = useState('');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
-
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   const [selectedTab, setSelectedTab] = useState(() => {
     return localStorage.getItem('vault_selectedTab') || 'personas';
   });
+
+  const [compactMode, setCompactMode] = useState(() => {
+  return localStorage.getItem('vault_setting_compactMode') === 'true';
+});
+
+useEffect(() => {
+  const handleStorageChange = () => {
+    setCompactMode(localStorage.getItem('vault_setting_compactMode') === 'true');
+  };
+
+  window.addEventListener('storage', handleStorageChange);
+  return () => {
+    window.removeEventListener('storage', handleStorageChange);
+  };
+}, []);
+
+
 
   const [token, setToken] = useState(() => localStorage.getItem('vault_jwt_token') || null);
   const [decodedToken, setDecodedToken] = useState(null);
@@ -103,6 +121,8 @@ function App() {
     );
   }
 
+  
+
   const personaCount = personas.length;
 const promptCount = prompts.length;
 const favoriteCount =
@@ -116,6 +136,8 @@ const allTags = [...personas, ...prompts]
   .filter((tag, i, arr) => arr.indexOf(tag) === i);
 
 const tagsUsed = allTags.length;
+
+
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white transition-colors duration-500 px-2 sm:px-4">
@@ -228,6 +250,7 @@ const tagsUsed = allTags.length;
             sortOption={personaSortOption}
             onShowToast={setGlobalToastMessage}
             onSortChange={setPersonaSortOption}
+            compactMode={compactMode}
           />
         </div>
 
@@ -269,6 +292,7 @@ const tagsUsed = allTags.length;
             showFavoritesOnly={showFavoritesOnly}
             sortOption={promptSortOption}
             setSortOption={setPromptSortOption}
+            compactMode={compactMode}
           />
         </div>
       </div>
@@ -312,13 +336,22 @@ const tagsUsed = allTags.length;
 
 )}
 
+{isSettingsModalOpen && (
+  <SettingsModal
+    onClose={() => setIsSettingsModalOpen(false)}
+    compactMode={compactMode}
+    setCompactMode={setCompactMode}
+  />
+)}
 
 
-      <Footer
-        username={username} // ✅ username doorgeven
-        personasCount={personas.length}
-        promptsCount={prompts.length}
-      />
+
+{/*   <Footer
+  username={username}
+  personasCount={personas.length}
+  promptsCount={prompts.length}
+  onOpenSettings={() => setIsSettingsModalOpen(true)}
+/> */}
     </main>
   );
 }

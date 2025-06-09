@@ -2,48 +2,71 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const basePath = '/vault/';
-// const basePath = '/'; // gebruik deze als je in root publiceert
+const basePath = '/vault/'; // ← update dit als je in root zou willen publiceren
 
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
     VitePWA({
-      injectRegister: 'inline', // ✅ voeg inline inject toe
-      registerType: 'autoUpdate', // Altijd auto-updaten → beste UX
+      injectRegister: 'inline',         // Snelle initiatie, minder netwerk calls
+      registerType: 'autoUpdate',       // Automatisch nieuwe versies activeren
       manifest: {
         name: 'Persona Vault',
         short_name: 'Vault',
-        start_url: '/vault/', // moet matchen
-        scope: '/vault/', // ✅ scope toevoegen
+        start_url: '/vault/',
+        scope: '/vault/',
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#2563eb',
         description: 'Persona & Prompt Vault App',
         icons: [
-  {
-    src: './logo-192.png',
-    sizes: '192x192',
-    type: 'image/png',
-  },
-  {
-    src: './logo-512.png',
-    sizes: '512x512',
-    type: 'image/png',
-  },
-],
+          {
+            src: './logo-192.png',
+            sizes: '192x192',
+            type: 'image/png',
+          },
+          {
+            src: './logo-512.png',
+            sizes: '512x512',
+            type: 'image/png',
+          },
+        ],
       },
       workbox: {
-        // Optioneel → stel in WAT je cached:
         runtimeCaching: [
+          // ⚠️ HTML navigaties → NetworkFirst → altijd laatste index.html
           {
-            urlPattern: ({ url }) => url.origin === self.location.origin,
+            urlPattern: ({ request }) => request.mode === 'navigate',
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'vault-html-cache',
+              expiration: {
+                maxEntries: 10,
+                maxAgeSeconds: 60 * 60 * 24, // 1 dag
+              },
+            },
+          },
+          // JS/CSS → CacheFirst → hashed & veilig
+          {
+            urlPattern: ({ request }) => request.destination === 'script' || request.destination === 'style',
             handler: 'CacheFirst',
             options: {
-              cacheName: 'vault-content-cache',
+              cacheName: 'vault-static-cache',
               expiration: {
-                maxEntries: 200,
+                maxEntries: 50,
+                maxAgeSeconds: 60 * 60 * 24 * 30, // 30 dagen
+              },
+            },
+          },
+          // Afbeeldingen → CacheFirst
+          {
+            urlPattern: ({ request }) => request.destination === 'image',
+            handler: 'CacheFirst',
+            options: {
+              cacheName: 'vault-image-cache',
+              expiration: {
+                maxEntries: 50,
                 maxAgeSeconds: 60 * 60 * 24 * 30, // 30 dagen
               },
             },

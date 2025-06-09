@@ -6,7 +6,7 @@ import { FiEdit2, FiTrash2, FiDownload, FiCopy } from 'react-icons/fi';
 import ConfirmDialog from './ConfirmDialog';
 import Button from './Button';
 
-export default function PersonaCard({ persona, onToggleFavorite, onDelete, onEdit, onShowToast }) {
+export default function PersonaCard({ persona, compactMode, onToggleFavorite, onDelete, onEdit, onShowToast }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleCopy = (text) => {
@@ -19,7 +19,6 @@ export default function PersonaCard({ persona, onToggleFavorite, onDelete, onEdi
       });
   };
 
-  // ✅ Robust tags parsing
   const tagsArray = Array.isArray(persona.tags)
     ? persona.tags
     : typeof persona.tags === 'string'
@@ -27,23 +26,26 @@ export default function PersonaCard({ persona, onToggleFavorite, onDelete, onEdi
       : [];
 
   return (
-    <div className="bg-gradient-to-tr from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 p-6 mb-6 transition-transform transform hover:scale-[1.02] hover:shadow-xl duration-200 ease-in-out">
+    <div className={`bg-gradient-to-tr from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 ${compactMode ? 'p-3 mb-4' : 'p-6 mb-6'} transition-transform transform hover:scale-[1.02] hover:shadow-xl duration-200 ease-in-out`}>
 
       <div className="flex justify-between items-start flex-wrap gap-4">
         {/* Content */}
         <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-1">{persona.name}</h2>
-          <p className="text-sm text-gray-500 mb-2">{persona.description}</p>
-          <div className="flex flex-wrap gap-2">
-            {tagsArray.map(tag => (
-              <span
-                key={tag}
-                className="bg-blue-100 text-blue-800 text-xs font-medium px-2.5 py-0.5 rounded-full dark:bg-blue-900 dark:text-blue-300"
-              >
-                {tag}
-              </span>
-            ))}
-          </div>
+          <h2 className={`font-bold text-gray-900 dark:text-white mb-1 ${compactMode ? 'text-lg' : 'text-xl'}`}>{persona.name}</h2>
+          <p className={`text-gray-500 mb-2 ${compactMode ? 'text-xs' : 'text-sm'}`}>{persona.description}</p>
+
+          {!compactMode && (
+            <div className="flex flex-wrap gap-2">
+              {tagsArray.map(tag => (
+                <span
+                  key={tag}
+                  className="font-medium rounded-full px-2.5 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
+                >
+                  {tag}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Actions */}
@@ -93,7 +95,7 @@ export default function PersonaCard({ persona, onToggleFavorite, onDelete, onEdi
       {/* Try in Platform → under card */}
       <TryInPlatformButtons promptText={persona.description} onShowToast={onShowToast} />
 
-      {/* ConfirmDialog → Confirm Delete */}
+      {/* ConfirmDialog */}
       <ConfirmDialog
         isOpen={confirmOpen}
         onClose={() => setConfirmOpen(false)}
