@@ -15,7 +15,7 @@ import { jwtDecode } from 'jwt-decode';
 import Footer from './components/Footer';
 import ProfileModal from './components/ProfileModal';
 import SettingsModal from './components/SettingsModal';
-
+import FloatingInstallBanner from './components/FloatingInstallBanner';
 import './index.css';
 
 function App() {
@@ -352,6 +352,7 @@ const tagsUsed = allTags.length;
   promptsCount={prompts.length}
   onOpenSettings={() => setIsSettingsModalOpen(true)}
 /> */}
+<FloatingInstallBanner />
     </main>
   );
 }

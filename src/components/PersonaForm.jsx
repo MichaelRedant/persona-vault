@@ -2,41 +2,42 @@ import { useState, useEffect } from 'react';
 import Input from './Input';
 import Textarea from './Textarea';
 import Button from './Button';
+import useDraft from '../hooks/useDraft';
 
 export default function PersonaForm({ onSave, initialData }) {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
+  const initialFormState = {
+    name: '',
+    description: '',
+    tagsInput: '',
+  };
+
+  const [draft, setDraft, clearDraft] = useDraft('vault_draft_persona', initialFormState);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Sync initialData → for edit mode only
   useEffect(() => {
     if (initialData) {
-      setName(initialData.name || '');
-      setDescription(initialData.description || '');
-
-      // ✅ robust tags handling
-      const tagsArray = Array.isArray(initialData.tags)
-        ? initialData.tags
-        : typeof initialData.tags === 'string'
-          ? initialData.tags.split(',').map(t => t.trim()).filter(Boolean)
-          : [];
-
-      setTagsInput(tagsArray.join(', '));
-
+      setDraft({
+        name: initialData.name || '',
+        description: initialData.description || '',
+        tagsInput: Array.isArray(initialData.tags)
+          ? initialData.tags.join(', ')
+          : typeof initialData.tags === 'string'
+          ? initialData.tags
+          : '',
+      });
       setError(null);
     } else {
-      setName('');
-      setDescription('');
-      setTagsInput('');
-      setError(null);
+      setError(null); // No setDraft(initialFormState) here! → let useDraft do its job
     }
-  }, [initialData]);
+  }, [initialData, setDraft]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (name.trim() === '' || description.trim() === '') {
+    if (draft.name.trim() === '' || draft.description.trim() === '') {
       setError('Name and Description are required.');
       return;
     }
@@ -46,10 +47,10 @@ export default function PersonaForm({ onSave, initialData }) {
 
     const personaData = {
       id: initialData ? initialData.id : undefined,
-      name,
-      description,
+      name: draft.name,
+      description: draft.description,
       favorite: initialData ? initialData.favorite : false,
-      tags: tagsInput
+      tags: draft.tagsInput
         .split(',')
         .map((tag) => tag.trim())
         .filter((tag) => tag.length > 0),
@@ -57,42 +58,35 @@ export default function PersonaForm({ onSave, initialData }) {
 
     try {
       await onSave(personaData);
+      clearDraft(); // clear draft after save
     } catch (err) {
       console.error('Error saving persona:', err);
       setError('An error occurred while saving. Please try again.');
     } finally {
       setLoading(false);
     }
-
-    if (!initialData) {
-      setName('');
-      setDescription('');
-      setTagsInput('');
-    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
-      {error && (
-        <div className="text-red-500 text-sm font-medium">{error}</div>
-      )}
+      {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
 
       <Input
         label="Persona Name"
-        value={name}
-        onChange={(e) => setName(e.target.value)}
+        value={draft.name}
+        onChange={(e) => setDraft({ ...draft, name: e.target.value })}
         required
       />
       <Textarea
         label="Persona Description"
-        value={description}
-        onChange={(e) => setDescription(e.target.value)}
+        value={draft.description}
+        onChange={(e) => setDraft({ ...draft, description: e.target.value })}
         required
       />
       <Input
         label="Tags (comma-separated)"
-        value={tagsInput}
-        onChange={(e) => setTagsInput(e.target.value)}
+        value={draft.tagsInput}
+        onChange={(e) => setDraft({ ...draft, tagsInput: e.target.value })}
         placeholder="e.g. SEO, Content, Data"
       />
       <Button type="submit" disabled={loading}>

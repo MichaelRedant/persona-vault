@@ -31,8 +31,15 @@ export default function PersonaCard({ persona, compactMode, onToggleFavorite, on
       <div className="flex justify-between items-start flex-wrap gap-4">
         {/* Content */}
         <div>
-          <h2 className={`font-bold text-gray-900 dark:text-white mb-1 ${compactMode ? 'text-lg' : 'text-xl'}`}>{persona.name}</h2>
-          <p className={`text-gray-500 mb-2 ${compactMode ? 'text-xs' : 'text-sm'}`}>{persona.description}</p>
+          <h2 className={`font-bold text-gray-900 dark:text-white mb-1 ${compactMode ? 'text-lg' : 'text-xl'}`}>
+  {persona.name}
+</h2>
+
+<div className={`max-h-52 overflow-y-auto mb-2 pr-1 ${compactMode ? 'text-xs' : 'text-sm'} text-gray-500`}>
+  <p className="whitespace-pre-line">
+    {persona.description}
+  </p>
+</div>
 
           {!compactMode && (
             <div className="flex flex-wrap gap-2">

@@ -33,8 +33,16 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
       <div className="flex justify-between items-start flex-wrap sm:flex-nowrap">
         {/* Content */}
         <div>
-          <h2 className={`font-bold text-gray-900 dark:text-white mb-1 leading-tight ${compactMode ? 'text-base' : 'text-xl'}`}>{prompt.title}</h2>
-          <p className={`text-gray-500 mb-2 leading-tight ${compactMode ? 'text-xs' : 'text-base'}`}>{prompt.content}</p>
+          <h2 className={`font-bold text-gray-900 dark:text-white mb-1 ${compactMode ? 'text-lg' : 'text-xl'}`}>
+  {prompt.title}
+</h2>
+
+<div className={`max-h-52 overflow-y-auto mb-2 pr-1 ${compactMode ? 'text-xs' : 'text-sm'} text-gray-500`}>
+  <p className="whitespace-pre-line">
+    {prompt.content}
+  </p>
+</div>
+
 
           {!compactMode && (
             <div className="flex flex-wrap gap-2">

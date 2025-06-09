@@ -2,41 +2,42 @@ import { useState, useEffect } from 'react';
 import Input from './Input';
 import Textarea from './Textarea';
 import Button from './Button';
+import useDraft from '../hooks/useDraft';
 
 export default function PromptForm({ onSave, initialData }) {
-  const [title, setTitle] = useState('');
-  const [content, setContent] = useState('');
-  const [tagsInput, setTagsInput] = useState('');
+  const initialFormState = {
+    title: '',
+    content: '',
+    tagsInput: '',
+  };
+
+  const [draft, setDraft, clearDraft] = useDraft('vault_draft_prompt', initialFormState);
+
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  // Sync initialData → for edit mode
   useEffect(() => {
     if (initialData) {
-      setTitle(initialData.title || '');
-      setContent(initialData.content || '');
-
-      // ✅ robust tags handling
-      const tagsArray = Array.isArray(initialData.tags)
-        ? initialData.tags
-        : typeof initialData.tags === 'string'
-          ? initialData.tags.split(',').map(t => t.trim()).filter(Boolean)
-          : [];
-
-      setTagsInput(tagsArray.join(', '));
-
+      setDraft({
+        title: initialData.title || '',
+        content: initialData.content || '',
+        tagsInput: Array.isArray(initialData.tags)
+          ? initialData.tags.join(', ')
+          : typeof initialData.tags === 'string'
+          ? initialData.tags
+          : '',
+      });
       setError(null);
     } else {
-      setTitle('');
-      setContent('');
-      setTagsInput('');
       setError(null);
     }
-  }, [initialData]);
+  }, [initialData, setDraft]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (title.trim() === '' || content.trim() === '') {
+    if (draft.title.trim() === '' || draft.content.trim() === '') {
       setError('Title and Prompt Text are required.');
       return;
     }
@@ -46,10 +47,10 @@ export default function PromptForm({ onSave, initialData }) {
 
     const promptData = {
       id: initialData ? initialData.id : undefined,
-      title,
-      content,
+      title: draft.title,
+      content: draft.content,
       favorite: initialData ? initialData.favorite : false,
-      tags: tagsInput
+      tags: draft.tagsInput
         .split(',')
         .map((tag) => tag.trim())
         .filter((tag) => tag.length > 0),
@@ -57,42 +58,35 @@ export default function PromptForm({ onSave, initialData }) {
 
     try {
       await onSave(promptData);
+      clearDraft(); // clear draft after save
     } catch (err) {
       console.error('Error saving prompt:', err);
       setError('An error occurred while saving. Please try again.');
     } finally {
       setLoading(false);
     }
-
-    if (!initialData) {
-      setTitle('');
-      setContent('');
-      setTagsInput('');
-    }
   };
 
   return (
     <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
-      {error && (
-        <div className="text-red-500 text-sm font-medium">{error}</div>
-      )}
+      {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
 
       <Input
         label="Prompt Title"
-        value={title}
-        onChange={(e) => setTitle(e.target.value)}
+        value={draft.title}
+        onChange={(e) => setDraft({ ...draft, title: e.target.value })}
         required
       />
       <Textarea
         label="Prompt Text"
-        value={content}
-        onChange={(e) => setContent(e.target.value)}
+        value={draft.content}
+        onChange={(e) => setDraft({ ...draft, content: e.target.value })}
         required
       />
       <Input
         label="Tags (comma-separated)"
-        value={tagsInput}
-        onChange={(e) => setTagsInput(e.target.value)}
+        value={draft.tagsInput}
+        onChange={(e) => setDraft({ ...draft, tagsInput: e.target.value })}
         placeholder="e.g. Blog, AI, Content"
       />
       <Button type="submit" disabled={loading}>
