@@ -25,7 +25,7 @@ if (!$email || !$password) {
 }
 
 // Get user
-$stmt = $pdo->prepare("SELECT id, password_hash FROM users WHERE email = ? OR username = ?");
+$stmt = $pdo->prepare("SELECT id, username, password_hash FROM users WHERE email = ? OR username = ?");
 $stmt->execute([$email, $email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -36,7 +36,12 @@ if (!$user || !password_verify($password, $user['password_hash'])) {
 }
 
 // Generate JWT
-$token = generate_jwt(['user_id' => $user['id']], 3600 * 24 * 7);
+$token = generate_jwt([
+  'user_id' => $user['id'],
+  'username' => $user['username']
+], 3600 * 24 * 7);
+
+
 
 echo json_encode(['success' => true, 'token' => trim($token)]);
 

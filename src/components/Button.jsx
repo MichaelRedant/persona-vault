@@ -17,15 +17,19 @@ export default function Button({
       'bg-green-300 text-green-800 hover:bg-green-400',
     danger:
       'bg-red-500 text-white hover:bg-red-600',
+    outline:
+      'border border-gray-300 text-gray-700 bg-white hover:bg-gray-100 dark:border-gray-600 dark:text-gray-200 dark:bg-transparent dark:hover:bg-gray-700',
   };
 
-  const disabledClasses = 'opacity-50 cursor-not-allowed';
+  const disabledClasses = 'opacity-50 cursor-not-allowed pointer-events-none';
 
   return (
     <button
       type={type}
       onClick={onClick}
-      className={`${baseClasses} ${variants[variant]} ${disabled ? disabledClasses : ''} ${className}`}
+      className={`${baseClasses} ${variants[variant] || variants.primary} ${
+        disabled ? disabledClasses : ''
+      } ${className}`}
       disabled={disabled}
     >
       {icon && <span className="mr-2">{icon}</span>}

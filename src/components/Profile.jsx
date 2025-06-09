@@ -1,4 +1,3 @@
-// src/pages/Profile.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
@@ -6,6 +5,7 @@ import { jwtDecode } from 'jwt-decode';
 export default function Profile() {
   const navigate = useNavigate();
   const [decodedToken, setDecodedToken] = useState(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const token = localStorage.getItem('vault_jwt_token');
@@ -15,54 +15,34 @@ export default function Profile() {
         setDecodedToken(decoded);
       } catch (err) {
         console.error('Invalid token:', err);
-        navigate('/'); // if token invalid → go back to login
+        navigate('/');
       }
     } else {
-      navigate('/'); // not logged in → back to login
+      navigate('/');
     }
+    setLoading(false);
   }, [navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('vault_jwt_token');
-    navigate('/'); // go back to login after logout
+    navigate('/');
   };
 
-  function getGreeting() {
-    const now = new Date();
-    const hour = now.getHours();
-
-    if (hour >= 5 && hour < 12) return '🌅 Good morning';
-    if (hour >= 12 && hour < 17) return '☀️ Good afternoon';
-    if (hour >= 17 && hour < 21) return '🌇 Good evening';
-    return '🌙 Good night';
-  }
-
-  if (!decodedToken) return null; // loading state (can be enhanced)
+  if (loading) return <div className="p-4">Laden...</div>;
 
   return (
-    <main className="flex flex-col items-center justify-center min-h-screen bg-gradient-to-b from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white transition-colors duration-500 px-4">
-      <div className="bg-white dark:bg-gray-800 p-8 rounded-xl shadow-lg w-full max-w-md text-center space-y-6">
-        <h1 className="text-3xl font-bold">{getGreeting()}, {decodedToken.username || decodedToken.email}!</h1>
-        <p className="text-gray-600 dark:text-gray-400">Welcome to your profile page. Here is your account info:</p>
-
-        <div className="text-left space-y-2">
-          <div>
-            <span className="font-medium text-gray-700 dark:text-gray-300">Username:</span>{' '}
-            <span className="text-gray-900 dark:text-gray-100">{decodedToken.username || '-'}</span>
-          </div>
-          <div>
-            <span className="font-medium text-gray-700 dark:text-gray-300">Email:</span>{' '}
-            <span className="text-gray-900 dark:text-gray-100">{decodedToken.email || '-'}</span>
-          </div>
+    <div className="max-w-2xl mx-auto p-4">
+      <h2 className="text-2xl font-bold mb-4">Profiel</h2>
+      {decodedToken ? (
+        <div className="space-y-2">
+          <p><strong>Gebruiker:</strong> {decodedToken.username || decodedToken.email || 'Onbekend'}</p>
+          <p><strong>Geregistreerd op:</strong> {new Date(decodedToken.iat * 1000).toLocaleString()}</p>
+          <p><strong>Token verloopt:</strong> {new Date(decodedToken.exp * 1000).toLocaleString()}</p>
+          <button onClick={handleLogout} className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded">Logout</button>
         </div>
-
-        <button
-          onClick={handleLogout}
-          className="mt-6 w-full px-4 py-2 rounded-full bg-red-500 text-white font-medium hover:bg-red-600 transition"
-        >
-          Logout
-        </button>
-      </div>
-    </main>
+      ) : (
+        <p className="text-red-600">Geen geldige logingegevens gevonden.</p>
+      )}
+    </div>
   );
 }

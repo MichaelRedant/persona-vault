@@ -12,7 +12,8 @@ import LoginForm from './components/LoginForm';
 import RegisterForm from './components/RegisterForm';
 import AuthLayout from './components/AuthLayout';
 import { jwtDecode } from 'jwt-decode';
-
+import Footer from './components/Footer';
+import ProfileModal from './components/ProfileModal';
 
 import './index.css';
 
@@ -23,100 +24,118 @@ function App() {
   const [personaSortOption, setPersonaSortOption] = useState('newest');
   const [promptSortOption, setPromptSortOption] = useState('newest');
   const [globalToastMessage, setGlobalToastMessage] = useState('');
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
 
-  // NEW: Tab state
+
   const [selectedTab, setSelectedTab] = useState(() => {
     return localStorage.getItem('vault_selectedTab') || 'personas';
   });
 
-// 1️⃣ Eerst token state
-const [token, setToken] = useState(() => localStorage.getItem('vault_jwt_token') || null);
+  const [token, setToken] = useState(() => localStorage.getItem('vault_jwt_token') || null);
+  const [decodedToken, setDecodedToken] = useState(null);
+  // 🚀 NEW → Username state
+  const [username, setUsername] = useState('');
 
-// 2️⃣ Daarna API hooks
-const {
-  personas,
-  loading: loadingPersonas,
-  error: errorPersonas,
-  setPersonas,
-  fetchPersonas,
-  createPersona,
-  updatePersona,
-  deletePersona,
-  updatePersonaFavorite
-} = usePersonasApi(token, setGlobalToastMessage);
+  const {
+    personas,
+    loading: loadingPersonas,
+    error: errorPersonas,
+    setPersonas,
+    fetchPersonas,
+    createPersona,
+    updatePersona,
+    deletePersona,
+    updatePersonaFavorite
+  } = usePersonasApi(token, setGlobalToastMessage);
+
+  const {
+    prompts,
+    loading: loadingPrompts,
+    error: errorPrompts,
+    setPrompts,
+    fetchPrompts,
+    createPrompt,
+    updatePrompt,
+    deletePrompt,
+    updatePromptFavorite
+  } = usePromptsApi(token, setGlobalToastMessage);
+
+  useEffect(() => {
+    console.log('TOKEN IN APP:', token);
+
+    if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ')) {
+      console.log('✅ Valid token → fetching data...');
+
+      try {
+  const decoded = jwtDecode(token);
+  setDecodedToken(decoded);
+  setUsername(decoded.username || decoded.email || 'User');
+} catch (err) {
+  console.error('Invalid token:', err); // ← nu err gebruikt
+  setDecodedToken(null);
+  setUsername('');
+}
 
 
-const {
-  prompts,
-  loading: loadingPrompts,
-  error: errorPrompts,
-  setPrompts,
-  fetchPrompts,
-  createPrompt,          // ✅ toegevoegd
-  updatePrompt,          // ✅ toegevoegd
-  deletePrompt,          // ✅ toegevoegd
-  updatePromptFavorite   // ✅ toegevoegd
-} = usePromptsApi(token, setGlobalToastMessage);
+      fetchPersonas();
+      fetchPrompts();
+    } else {
+      console.log('⛔️ No valid token yet → skipping fetch.');
+      setUsername('');
+    }
+  }, [token, fetchPersonas, fetchPrompts]);
 
-// 3️⃣ Daarna useEffect → met veilige guard
-useEffect(() => {
-  console.log('TOKEN IN APP:', token);
-
-  // Alleen fetchen als token een geldige JWT string is
-  if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ')) {
-    console.log('✅ Valid token → fetching data...');
-    fetchPersonas();
-    fetchPrompts();
-  } else {
-    console.log('⛔️ No valid token yet → skipping fetch.');
-  }
-}, [token, fetchPersonas, fetchPrompts]);
-
-
-  // Save selected tab to localStorage
   useEffect(() => {
     localStorage.setItem('vault_selectedTab', selectedTab);
   }, [selectedTab]);
 
-  
-
-  const decodedToken = token ? jwtDecode(token) : null;
-  const username = decodedToken?.username || decodedToken?.email || '';
   const [authTab, setAuthTab] = useState('login');
 
-if (!token) {
-  return (
-    <AuthLayout activeTab={authTab} onTabChange={setAuthTab}>
-      {authTab === 'login' ? (
-        <LoginForm onLoginSuccess={(token) => setToken(token)} />
-      ) : (
-        <RegisterForm />
-      )}
-    </AuthLayout>
-  );
-}
+  if (!token) {
+    return (
+      <AuthLayout activeTab={authTab} onTabChange={setAuthTab}>
+        {authTab === 'login' ? (
+          <LoginForm onLoginSuccess={(token) => setToken(token)} />
+        ) : (
+          <RegisterForm />
+        )}
+      </AuthLayout>
+    );
+  }
 
+  const personaCount = personas.length;
+const promptCount = prompts.length;
+const favoriteCount =
+  prompts.filter(p => p.favorite === true || p.favorite === 1 || p.favorite === 'true').length +
+  personas.filter(p => p.favorite === true || p.favorite === 1 || p.favorite === 'true').length;
+
+const promptsWithoutTagCount = prompts.filter(p => !p.tags || p.tags.length === 0).length;
+
+const allTags = [...personas, ...prompts]
+  .flatMap(p => p.tags || [])
+  .filter((tag, i, arr) => arr.indexOf(tag) === i);
+
+const tagsUsed = allTags.length;
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white transition-colors duration-500 px-2 sm:px-4">
 
-      {/* Global Toast */}
       {globalToastMessage && (
         <div className="fixed top-4 right-4 z-[9999]">
           <Toast message={globalToastMessage} onClose={() => setGlobalToastMessage('')} />
         </div>
       )}
 
-      {/* Sticky Header */}
       <Header
-        personas={personas}
-        prompts={prompts}
-        searchTerm={searchTerm}
-        setSearchTerm={setSearchTerm}
-        username={username}
-      />
+  personas={personas}
+  prompts={prompts}
+  searchTerm={searchTerm}
+  setSearchTerm={setSearchTerm}
+  username={username}
+  onOpenProfile={() => setIsProfileModalOpen(true)} // NIEUW
+/>
 
-      {/* Favorites Toggle */}
+
       <div className="max-w-5xl mx-auto mb-4 mt-6">
         <FavoritesFilter
           showFavoritesOnly={showFavoritesOnly}
@@ -125,7 +144,6 @@ if (!token) {
         />
       </div>
 
-      {/* Tags Filter */}
       <div className="max-w-5xl mx-auto mb-4">
         <TagsFilter
           tags={[...personas.map((p) => p.tags || []), ...prompts.map((p) => p.tags || [])]}
@@ -144,7 +162,6 @@ if (!token) {
         />
       </div>
 
-      {/* Tabs */}
       <div className="max-w-5xl mx-auto mb-8 mt-4">
         <div className="flex flex-col sm:flex-row sm:justify-center sm:space-x-4 space-y-2 sm:space-y-0">
           <button
@@ -171,10 +188,8 @@ if (!token) {
         </div>
       </div>
 
-      {/* Dashboards */}
       <div className="max-w-5xl mx-auto relative min-h-[400px]">
 
-        {/* Persona Dashboard */}
         <div
           className={`transition-opacity duration-500 ease-in-out absolute top-0 left-0 w-full ${
             selectedTab === 'personas' ? 'opacity-100 pointer-events-auto static' : 'opacity-0 pointer-events-none'
@@ -192,7 +207,6 @@ if (!token) {
             />
           </div>
 
-          {/* Loading / Error UI */}
           {loadingPersonas && (
             <p className="text-center text-sm text-gray-500 mb-4">Loading personas...</p>
           )}
@@ -201,66 +215,110 @@ if (!token) {
           )}
 
           <PersonaDashboard
-  personas={personas}
-  setPersonas={setPersonas}
-  fetchPersonas={fetchPersonas}
-  createPersona={createPersona}                  // HIER toevoegen
-  updatePersona={updatePersona}                  // HIER toevoegen
-  deletePersona={deletePersona}                  // HIER toevoegen
-  updatePersonaFavorite={updatePersonaFavorite}  // HIER toevoegen
-  searchTerm={searchTerm}
-  activeTags={activeTags}
-  showFavoritesOnly={showFavoritesOnly}
-  sortOption={personaSortOption}
-  onShowToast={setGlobalToastMessage}
-  onSortChange={setPersonaSortOption}
-/>
+            personas={personas}
+            setPersonas={setPersonas}
+            fetchPersonas={fetchPersonas}
+            createPersona={createPersona}
+            updatePersona={updatePersona}
+            deletePersona={deletePersona}
+            updatePersonaFavorite={updatePersonaFavorite}
+            searchTerm={searchTerm}
+            activeTags={activeTags}
+            showFavoritesOnly={showFavoritesOnly}
+            sortOption={personaSortOption}
+            onShowToast={setGlobalToastMessage}
+            onSortChange={setPersonaSortOption}
+          />
         </div>
 
-        {/* Prompt Dashboard */}
-<div
-  className={`transition-opacity duration-500 ease-in-out absolute top-0 left-0 w-full ${
-    selectedTab === 'prompts' ? 'opacity-100 pointer-events-auto static' : 'opacity-0 pointer-events-none'
-  }`}
->
-  <div className="flex flex-wrap justify-between items-center gap-y-2 mb-4">
-    <h2 className="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 mb-2 flex items-center space-x-2">
-      <span>Prompt Dashboard</span>
-      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">({prompts.length})</span>
-    </h2>
+        <div
+          className={`transition-opacity duration-500 ease-in-out absolute top-0 left-0 w-full ${
+            selectedTab === 'prompts' ? 'opacity-100 pointer-events-auto static' : 'opacity-0 pointer-events-none'
+          }`}
+        >
+          <div className="flex flex-wrap justify-between items-center gap-y-2 mb-4">
+            <h2 className="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 mb-2 flex items-center space-x-2">
+              <span>Prompt Dashboard</span>
+              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">({prompts.length})</span>
+            </h2>
 
-    <SortDropdown
-      sortOption={promptSortOption}
-      onSortChange={setPromptSortOption}
-    />
-  </div>
+            <SortDropdown
+              sortOption={promptSortOption}
+              onSortChange={setPromptSortOption}
+            />
+          </div>
 
-  {/* Loading / Error UI */}
-  {loadingPrompts && (
-    <p className="text-center text-sm text-gray-500 mb-4">Loading prompts...</p>
-  )}
-  {errorPrompts && (
-    <p className="text-center text-sm text-red-500 mb-4">Error loading prompts</p>
-  )}
+          {loadingPrompts && (
+            <p className="text-center text-sm text-gray-500 mb-4">Loading prompts...</p>
+          )}
+          {errorPrompts && (
+            <p className="text-center text-sm text-red-500 mb-4">Error loading prompts</p>
+          )}
 
-  <PromptDashboard
-    prompts={prompts}
-    setPrompts={setPrompts}
-    fetchPrompts={fetchPrompts}
-    createPrompt={createPrompt}                 // ✅ toegevoegd
-    updatePrompt={updatePrompt}                 // ✅ toegevoegd
-    deletePrompt={deletePrompt}                 // ✅ toegevoegd
-    updatePromptFavorite={updatePromptFavorite} // ✅ toegevoegd
-    searchTerm={searchTerm}
-    onShowToast={setGlobalToastMessage}
-    activeTags={activeTags}
-    showFavoritesOnly={showFavoritesOnly}
-    sortOption={promptSortOption}
-    setSortOption={setPromptSortOption}
-  />
-</div>
-
+          <PromptDashboard
+            prompts={prompts}
+            setPrompts={setPrompts}
+            fetchPrompts={fetchPrompts}
+            createPrompt={createPrompt}
+            updatePrompt={updatePrompt}
+            deletePrompt={deletePrompt}
+            updatePromptFavorite={updatePromptFavorite}
+            searchTerm={searchTerm}
+            onShowToast={setGlobalToastMessage}
+            activeTags={activeTags}
+            showFavoritesOnly={showFavoritesOnly}
+            sortOption={promptSortOption}
+            setSortOption={setPromptSortOption}
+          />
+        </div>
       </div>
+
+      {isProfileModalOpen && decodedToken && (
+  <ProfileModal
+  decodedToken={decodedToken}
+  personaCount={personaCount}
+  promptCount={promptCount}
+  favoriteCount={favoriteCount}
+  promptsWithoutTagCount={promptsWithoutTagCount}
+  tagsUsed={tagsUsed}
+  onLogout={() => {
+    localStorage.removeItem('vault_jwt_token');
+    setToken(null);
+    setUsername('');
+    setDecodedToken(null);
+  }}
+  onClose={() => setIsProfileModalOpen(false)}
+  onNewPrompt={() => {
+    setSelectedTab('prompts');
+    setIsProfileModalOpen(false);
+    setGlobalToastMessage('Start a new prompt 🎯');
+  }}
+  onNewPersona={() => {
+    setSelectedTab('personas');
+    setIsProfileModalOpen(false);
+    setGlobalToastMessage('Start a new persona 🎭');
+  }}
+  onExport={() => {
+    const data = { personas, prompts };
+    const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = 'vault_export.json';
+    link.click();
+    URL.revokeObjectURL(url);
+  }}
+/>
+
+)}
+
+
+
+      <Footer
+        username={username} // ✅ username doorgeven
+        personasCount={personas.length}
+        promptsCount={prompts.length}
+      />
     </main>
   );
 }
