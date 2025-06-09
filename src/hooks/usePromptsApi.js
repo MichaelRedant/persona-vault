@@ -3,7 +3,7 @@ import { useApiErrorHandler } from './useApiErrorHandler';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
 
-export function usePromptsApi(onShowToast) {
+export function usePromptsApi(token, onShowToast) {
   const [prompts, setPrompts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -23,7 +23,13 @@ export function usePromptsApi(onShowToast) {
   const fetchPrompts = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/prompts_get.php`);
+      const response = await fetch(`${BASE_URL}/prompts_get.php`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
 
       if (Array.isArray(data)) {
@@ -41,13 +47,16 @@ export function usePromptsApi(onShowToast) {
     } finally {
       setLoading(false);
     }
-  }, [handleError]);
+  }, [handleError, token]);
 
   const createPrompt = async (title, content, category, tags = []) => {
     try {
       const response = await fetch(`${BASE_URL}/prompts_create.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ title, content, category, tags }),
       });
       const data = await response.json();
@@ -67,7 +76,10 @@ export function usePromptsApi(onShowToast) {
     try {
       const response = await fetch(`${BASE_URL}/prompts_update.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ id, title, content, category, tags }),
       });
       const data = await response.json();
@@ -87,12 +99,14 @@ export function usePromptsApi(onShowToast) {
     try {
       const response = await fetch(`${BASE_URL}/prompts_update_favorite.php`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
         body: JSON.stringify({ id, favorite }),
       });
       const data = await response.json();
       if (data.success) {
-        // 👉 update state locally for instant feedback:
         setPrompts((prev) =>
           prev.map((p) =>
             p.id === id ? { ...p, favorite } : p
@@ -110,10 +124,14 @@ export function usePromptsApi(onShowToast) {
 
   const deletePrompt = async (id) => {
     try {
-      const response = await fetch(`${BASE_URL}/prompts_delete.php?id=${id}`);
+      const response = await fetch(`${BASE_URL}/prompts_delete.php?id=${id}`, {
+        method: 'DELETE',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
       const data = await response.json();
       if (data.success) {
-        // 👉 update state locally for instant feedback:
         setPrompts((prev) => prev.filter((p) => p.id !== id));
       } else {
         handleError(new Error('API returned failure'), 'Failed to delete prompt');
@@ -126,8 +144,15 @@ export function usePromptsApi(onShowToast) {
   };
 
   useEffect(() => {
+  if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ')) {
+    console.log('usePromptsApi → Valid token → fetching prompts');
     fetchPrompts();
-  }, [fetchPrompts]);
+  } else {
+    console.log('usePromptsApi → No valid token → skipping prompts fetch');
+  }
+}, [fetchPrompts, token]);
+
+  
 
   return {
     prompts,

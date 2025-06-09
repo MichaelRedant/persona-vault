@@ -3,40 +3,34 @@ import Modal from './Modal';
 import PersonaForm from './PersonaForm';
 import PersonaCard from './PersonaCard';
 import Button from './Button';
-import Toast from './Toast';
 import SortDropdown from './SortDropdown';
 
 import { useState } from 'react';
-import { usePersonasApi } from '../hooks/usePersonasApi';
 
 export default function PersonaDashboard({
   personas,
   fetchPersonas,
+  createPersona,
+  updatePersona,
+  updatePersonaFavorite,
+  deletePersona,
   searchTerm,
   activeTags,
   showFavoritesOnly,
   sortOption,
   onShowToast,
 }) {
-  const {
-    loading,
-    createPersona,
-    updatePersona,
-    updatePersonaFavorite,
-    deletePersona,
-  } = usePersonasApi(onShowToast);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPersona, setEditingPersona] = useState(null);
 
   const handleSavePersona = async (persona) => {
     if (editingPersona) {
       await updatePersona(persona.id, persona.name, persona.description, persona.tags);
-      await fetchPersonas(); // 🔥 Refresh list after save → also updates tags/favorites
+      await fetchPersonas();
       onShowToast('Persona updated successfully!');
     } else {
       await createPersona(persona.name, persona.description, persona.tags);
-      await fetchPersonas(); // 🔥 Refresh list after create → also updates tags/favorites
+      await fetchPersonas();
       onShowToast('Persona created successfully!');
     }
 
@@ -49,7 +43,6 @@ export default function PersonaDashboard({
     setIsModalOpen(true);
   };
 
-  // 🟢 Filtered + sorted personas → als constante
   const filteredPersonas = personas
     .filter((item) =>
       (!showFavoritesOnly || item.favorite) &&
@@ -69,10 +62,9 @@ export default function PersonaDashboard({
       return 0;
     });
 
-  // 🟢 Simuleer favorite toggle lokaal → en refresh App.jsx → TagsFilter + FavoritesFilter work
   const toggleFavorite = async (id, currentFavorite) => {
     await updatePersonaFavorite(id, currentFavorite ? 0 : 1);
-    await fetchPersonas(); // 🔥 Important → makes App.jsx get updated → FavoritesFilter and TagsFilter update
+    await fetchPersonas();
     onShowToast('Favorite updated!');
   };
 
@@ -84,15 +76,8 @@ export default function PersonaDashboard({
         </Button>
       </div>
 
-      {/* 🟢 Show loading state */}
-      {loading && (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <p className="text-lg mb-2">Loading personas...</p>
-        </div>
-      )}
-
       {/* 🟢 Show empty state if needed */}
-      {!loading && filteredPersonas.length === 0 ? (
+      {filteredPersonas.length === 0 ? (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <p className="text-lg mb-2">No personas found.</p>
           <p className="text-sm">Try adjusting your search or filters.</p>
@@ -105,7 +90,7 @@ export default function PersonaDashboard({
             onToggleFavorite={toggleFavorite}
             onDelete={async () => {
               await deletePersona(persona.id);
-              await fetchPersonas(); // 🔥 Also after delete → update TagsFilter and FavoritesFilter
+              await fetchPersonas();
               onShowToast('Persona deleted.');
             }}
             onEdit={startEdit}

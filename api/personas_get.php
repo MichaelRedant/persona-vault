@@ -1,13 +1,38 @@
 <?php
-header('Content-Type: application/json; charset=utf-8');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
+error_log('Authorization header: ' . ($_SERVER['HTTP_AUTHORIZATION'] ?? 'NOT SET'));
 
+header('Content-Type: application/json');
+include 'cors.php';
 include 'db.php';
 
+require_once 'jwt_utils.php';
+
+$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Missing or invalid Authorization header']);
+    exit;
+}
+
+$jwt = $matches[1];
+$decoded = validate_jwt($jwt); 
+
+if (!$decoded) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Invalid or expired token']);
+    exit;
+}
+
+$user_id = $decoded['user_id'] ?? null;
+if (!$user_id) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Token missing user_id']);
+    exit;
+}
+
 try {
-    $stmt = $pdo->query("SELECT * FROM personas ORDER BY created_at DESC");
+    $stmt = $pdo->prepare("SELECT * FROM personas WHERE user_id = ? ORDER BY created_at DESC");
+    $stmt->execute([$user_id]);
     $personas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     echo json_encode(is_array($personas) ? $personas : []);

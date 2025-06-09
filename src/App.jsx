@@ -8,6 +8,12 @@ import Toast from './components/Toast';
 import { useState, useEffect } from 'react';
 import { usePersonasApi } from './hooks/usePersonasApi';
 import { usePromptsApi } from './hooks/usePromptsApi';
+import LoginForm from './components/LoginForm';
+import RegisterForm from './components/RegisterForm';
+import AuthLayout from './components/AuthLayout';
+import { jwtDecode } from 'jwt-decode';
+
+
 import './index.css';
 
 function App() {
@@ -23,27 +29,73 @@ function App() {
     return localStorage.getItem('vault_selectedTab') || 'personas';
   });
 
-  // Hooks → API
-  const {
+// 1️⃣ Eerst token state
+const [token, setToken] = useState(() => localStorage.getItem('vault_jwt_token') || null);
+
+// 2️⃣ Daarna API hooks
+const {
   personas,
   loading: loadingPersonas,
   error: errorPersonas,
   setPersonas,
-  fetchPersonas,   // <--- ADD THIS LINE!
-} = usePersonasApi(setGlobalToastMessage);
+  fetchPersonas,
+  createPersona,
+  updatePersona,
+  deletePersona,
+  updatePersonaFavorite
+} = usePersonasApi(token, setGlobalToastMessage);
+
 
 const {
   prompts,
   loading: loadingPrompts,
   error: errorPrompts,
   setPrompts,
-  fetchPrompts,   // <--- ADD THIS LINE!
-} = usePromptsApi(setGlobalToastMessage);
+  fetchPrompts,
+  createPrompt,          // ✅ toegevoegd
+  updatePrompt,          // ✅ toegevoegd
+  deletePrompt,          // ✅ toegevoegd
+  updatePromptFavorite   // ✅ toegevoegd
+} = usePromptsApi(token, setGlobalToastMessage);
+
+// 3️⃣ Daarna useEffect → met veilige guard
+useEffect(() => {
+  console.log('TOKEN IN APP:', token);
+
+  // Alleen fetchen als token een geldige JWT string is
+  if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ')) {
+    console.log('✅ Valid token → fetching data...');
+    fetchPersonas();
+    fetchPrompts();
+  } else {
+    console.log('⛔️ No valid token yet → skipping fetch.');
+  }
+}, [token, fetchPersonas, fetchPrompts]);
+
 
   // Save selected tab to localStorage
   useEffect(() => {
     localStorage.setItem('vault_selectedTab', selectedTab);
   }, [selectedTab]);
+
+  
+
+  const decodedToken = token ? jwtDecode(token) : null;
+  const username = decodedToken?.username || decodedToken?.email || '';
+  const [authTab, setAuthTab] = useState('login');
+
+if (!token) {
+  return (
+    <AuthLayout activeTab={authTab} onTabChange={setAuthTab}>
+      {authTab === 'login' ? (
+        <LoginForm onLoginSuccess={(token) => setToken(token)} />
+      ) : (
+        <RegisterForm />
+      )}
+    </AuthLayout>
+  );
+}
+
 
   return (
     <main className="min-h-screen bg-gradient-to-b from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white transition-colors duration-500 px-2 sm:px-4">
@@ -61,6 +113,7 @@ const {
         prompts={prompts}
         searchTerm={searchTerm}
         setSearchTerm={setSearchTerm}
+        username={username}
       />
 
       {/* Favorites Toggle */}
@@ -148,56 +201,64 @@ const {
           )}
 
           <PersonaDashboard
-            personas={personas}
-            setPersonas={setPersonas}
-            fetchPersonas={fetchPersonas}
-            searchTerm={searchTerm}
-            activeTags={activeTags}
-            showFavoritesOnly={showFavoritesOnly}
-            sortOption={personaSortOption}
-            onShowToast={setGlobalToastMessage}
-            onSortChange={setPersonaSortOption}
-          />
+  personas={personas}
+  setPersonas={setPersonas}
+  fetchPersonas={fetchPersonas}
+  createPersona={createPersona}                  // HIER toevoegen
+  updatePersona={updatePersona}                  // HIER toevoegen
+  deletePersona={deletePersona}                  // HIER toevoegen
+  updatePersonaFavorite={updatePersonaFavorite}  // HIER toevoegen
+  searchTerm={searchTerm}
+  activeTags={activeTags}
+  showFavoritesOnly={showFavoritesOnly}
+  sortOption={personaSortOption}
+  onShowToast={setGlobalToastMessage}
+  onSortChange={setPersonaSortOption}
+/>
         </div>
 
         {/* Prompt Dashboard */}
-        <div
-          className={`transition-opacity duration-500 ease-in-out absolute top-0 left-0 w-full ${
-            selectedTab === 'prompts' ? 'opacity-100 pointer-events-auto static' : 'opacity-0 pointer-events-none'
-          }`}
-        >
-          <div className="flex flex-wrap justify-between items-center gap-y-2 mb-4">
-            <h2 className="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 mb-2 flex items-center space-x-2">
-              <span>Prompt Dashboard</span>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">({prompts.length})</span>
-            </h2>
+<div
+  className={`transition-opacity duration-500 ease-in-out absolute top-0 left-0 w-full ${
+    selectedTab === 'prompts' ? 'opacity-100 pointer-events-auto static' : 'opacity-0 pointer-events-none'
+  }`}
+>
+  <div className="flex flex-wrap justify-between items-center gap-y-2 mb-4">
+    <h2 className="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 mb-2 flex items-center space-x-2">
+      <span>Prompt Dashboard</span>
+      <span className="text-sm font-medium text-gray-500 dark:text-gray-400">({prompts.length})</span>
+    </h2>
 
-            <SortDropdown
-              sortOption={promptSortOption}
-              onSortChange={setPromptSortOption}
-            />
-          </div>
+    <SortDropdown
+      sortOption={promptSortOption}
+      onSortChange={setPromptSortOption}
+    />
+  </div>
 
-          {/* Loading / Error UI */}
-          {loadingPrompts && (
-            <p className="text-center text-sm text-gray-500 mb-4">Loading prompts...</p>
-          )}
-          {errorPrompts && (
-            <p className="text-center text-sm text-red-500 mb-4">Error loading prompts</p>
-          )}
+  {/* Loading / Error UI */}
+  {loadingPrompts && (
+    <p className="text-center text-sm text-gray-500 mb-4">Loading prompts...</p>
+  )}
+  {errorPrompts && (
+    <p className="text-center text-sm text-red-500 mb-4">Error loading prompts</p>
+  )}
 
-          <PromptDashboard
-            prompts={prompts}
-            setPrompts={setPrompts}
-            fetchPrompts={fetchPrompts}
-            searchTerm={searchTerm}
-            onShowToast={setGlobalToastMessage}
-            activeTags={activeTags}
-            showFavoritesOnly={showFavoritesOnly}
-            sortOption={promptSortOption}
-            setSortOption={setPromptSortOption}
-          />
-        </div>
+  <PromptDashboard
+    prompts={prompts}
+    setPrompts={setPrompts}
+    fetchPrompts={fetchPrompts}
+    createPrompt={createPrompt}                 // ✅ toegevoegd
+    updatePrompt={updatePrompt}                 // ✅ toegevoegd
+    deletePrompt={deletePrompt}                 // ✅ toegevoegd
+    updatePromptFavorite={updatePromptFavorite} // ✅ toegevoegd
+    searchTerm={searchTerm}
+    onShowToast={setGlobalToastMessage}
+    activeTags={activeTags}
+    showFavoritesOnly={showFavoritesOnly}
+    sortOption={promptSortOption}
+    setSortOption={setPromptSortOption}
+  />
+</div>
 
       </div>
     </main>

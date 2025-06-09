@@ -6,36 +6,31 @@ import Button from './Button';
 import Toast from './Toast';
 import SortDropdown from './SortDropdown';
 import { useState } from 'react';
-import { usePromptsApi } from '../hooks/usePromptsApi';
 
 export default function PromptDashboard({
   prompts,
-  fetchPrompts, // ADD THIS → for refreshing state after favorite toggle
+  fetchPrompts,
+  createPrompt,
+  updatePrompt,
+  deletePrompt,
+  updatePromptFavorite,
   searchTerm,
   activeTags,
   showFavoritesOnly,
   sortOption,
   onShowToast,
 }) {
-  const {
-    loading,
-    createPrompt,
-    updatePrompt,
-    deletePrompt,
-    updatePromptFavorite,
-  } = usePromptsApi(onShowToast);
-
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState(null);
 
   const handleSavePrompt = async (prompt) => {
     if (editingPrompt) {
       await updatePrompt(prompt.id, prompt.title, prompt.content, prompt.category, prompt.tags);
-      await fetchPrompts(); // Refresh after update → good practice
+      await fetchPrompts();
       onShowToast('Prompt updated successfully!');
     } else {
       await createPrompt(prompt.title, prompt.content, prompt.category, prompt.tags);
-      await fetchPrompts(); // Refresh after create → good practice
+      await fetchPrompts();
       onShowToast('Prompt created successfully!');
     }
 
@@ -48,7 +43,6 @@ export default function PromptDashboard({
     setIsModalOpen(true);
   };
 
-  // ✅ Filtered prompts
   const filteredPrompts = prompts
     .filter((prompt) =>
       (!showFavoritesOnly || prompt.favorite) &&
@@ -64,31 +58,21 @@ export default function PromptDashboard({
       return 0;
     });
 
-  // 🟢 Favorite toggle → update + refresh App state
   const toggleFavorite = async (id, currentFavorite) => {
     await updatePromptFavorite(id, currentFavorite ? 0 : 1);
-    await fetchPrompts(); // FORCE refresh → so TagsFilter / FavoritesFilter update in App.jsx
+    await fetchPrompts();
     onShowToast('Favorite updated!');
   };
 
   return (
     <div className="p-6">
-      {/* Add Prompt button */}
       <div className="flex justify-end mb-6">
         <Button variant="primary" onClick={() => { setEditingPrompt(null); setIsModalOpen(true); }}>
           + Add Prompt
         </Button>
       </div>
 
-      {/* Loading state */}
-      {loading && (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <p className="text-lg mb-2">Loading prompts...</p>
-        </div>
-      )}
-
-      {/* Empty state */}
-      {!loading && filteredPrompts.length === 0 ? (
+      {filteredPrompts.length === 0 ? (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <p className="text-lg mb-2">No prompts found.</p>
           <p className="text-sm">Try adjusting your search or filters.</p>
@@ -101,7 +85,7 @@ export default function PromptDashboard({
             onToggleFavorite={(id, currentFavorite) => toggleFavorite(id, currentFavorite)}
             onDelete={async () => {
               await deletePrompt(prompt.id);
-              await fetchPrompts(); // Refresh after delete
+              await fetchPrompts();
               onShowToast('Prompt deleted.');
             }}
             onEdit={startEdit}
@@ -110,7 +94,6 @@ export default function PromptDashboard({
         ))
       )}
 
-      {/* Modal */}
       <Modal isOpen={isModalOpen} onClose={() => {
         setIsModalOpen(false);
         setEditingPrompt(null);

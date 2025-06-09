@@ -1,14 +1,35 @@
 <?php
 header('Content-Type: application/json');
-header('Access-Control-Allow-Origin: *');
-header('Access-Control-Allow-Headers: Content-Type');
-header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
-
+include 'cors.php';
 include 'db.php';
 
-// Handle preflight request
+include 'jwt_utils.php';
+
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
+    exit;
+}
+
+$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Missing or invalid Authorization header']);
+    exit;
+}
+
+$jwt = $matches[1];
+$decoded = validate_jwt($jwt); 
+
+if (!$decoded) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Invalid or expired token']);
+    exit;
+}
+
+$user_id = $decoded['user_id'] ?? null;
+if (!$user_id) {
+    http_response_code(401);
+    echo json_encode(['error' => 'Token missing user_id']);
     exit;
 }
 
@@ -16,14 +37,11 @@ $data = json_decode(file_get_contents('php://input'), true);
 
 $name = $data['name'] ?? '';
 $description = $data['description'] ?? '';
-
 $tags = isset($data['tags']) && is_array($data['tags'])
     ? implode(',', array_map('trim', $data['tags']))
     : '';
 
-// INSERT with tags now included
-$stmt = $pdo->prepare("INSERT INTO personas (name, description, tags) VALUES (?, ?, ?)");
-$stmt->execute([$name, $description, $tags]);
+$stmt = $pdo->prepare("INSERT INTO personas (user_id, name, description, tags) VALUES (?, ?, ?, ?)");
+$stmt->execute([$user_id, $name, $description, $tags]);
 
 echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
-?>
