@@ -11,6 +11,9 @@
   },
   "dependencies": {
     "@headlessui/react": "^2.2.4",
+    "@tailwindcss/typography": "^0.5.16",
+    "@tiptap/react": "^2.14.0",
+    "@tiptap/starter-kit": "^2.14.0",
     "@vercel/kv": "^3.0.0",
     "jwt-decode": "^4.0.0",
     "react": "^19.1.0",

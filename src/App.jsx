@@ -16,6 +16,7 @@ import Footer from './components/Footer';
 import ProfileModal from './components/ProfileModal';
 import SettingsModal from './components/SettingsModal';
 import FloatingInstallBanner from './components/FloatingInstallBanner';
+import TagFilterDropdown from './components/TagFilterDropdown';
 import './index.css';
 
 function App() {
@@ -140,7 +141,8 @@ const tagsUsed = allTags.length;
 
 
   return (
-    <main className="min-h-screen bg-gradient-to-b from-gray-100 via-gray-50 to-white dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white transition-colors duration-500 px-2 sm:px-4">
+    <main className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-500 px-2 sm:px-4">
+
 
       {globalToastMessage && (
         <div className="fixed top-4 right-4 z-[9999]">
@@ -166,23 +168,40 @@ const tagsUsed = allTags.length;
         />
       </div>
 
-      <div className="max-w-5xl mx-auto mb-4">
-        <TagsFilter
-          tags={[...personas.map((p) => p.tags || []), ...prompts.map((p) => p.tags || [])]}
-          activeTags={activeTags}
-          onTagToggle={(tag) => {
-            if (tag === 'ALL') {
-              setActiveTags([]);
-            } else {
-              setActiveTags((prev) =>
-                prev.includes(tag)
-                  ? prev.filter((t) => t !== tag)
-                  : [...prev, tag]
-              );
-            }
-          }}
-        />
-      </div>
+      <div className="max-w-5xl mx-auto mb-4 flex flex-wrap gap-2 items-center">
+  <TagFilterDropdown
+    tags={[...personas.map((p) => p.tags || []), ...prompts.map((p) => p.tags || [])]}
+    activeTags={activeTags}
+    onTagToggle={(tag) => {
+      if (tag === 'ALL') {
+        setActiveTags([]);
+      } else {
+        setActiveTags((prev) =>
+          prev.includes(tag)
+            ? prev.filter((t) => t !== tag)
+            : [...prev, tag]
+        );
+      }
+    }}
+  />
+
+ {/*  <TagsFilter
+    tags={[...personas.map((p) => p.tags || []), ...prompts.map((p) => p.tags || [])]}
+    activeTags={activeTags}
+    onTagToggle={(tag) => {
+      if (tag === 'ALL') {
+        setActiveTags([]);
+      } else {
+        setActiveTags((prev) =>
+          prev.includes(tag)
+            ? prev.filter((t) => t !== tag)
+            : [...prev, tag]
+        );
+      }
+    }}
+  /> */}
+</div>
+
 
       <div className="max-w-5xl mx-auto mb-8 mt-4">
         <div className="flex flex-col sm:flex-row sm:justify-center sm:space-x-4 space-y-2 sm:space-y-0">

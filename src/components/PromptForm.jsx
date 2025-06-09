@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react';
 import Input from './Input';
-import Textarea from './Textarea';
 import Button from './Button';
 import useDraft from '../hooks/useDraft';
+import { useEditor, EditorContent } from '@tiptap/react';
+import StarterKit from '@tiptap/starter-kit';
+import EditorToolbar from './EditorToolbar';
 
 export default function PromptForm({ onSave, initialData }) {
   const initialFormState = {
@@ -16,7 +18,16 @@ export default function PromptForm({ onSave, initialData }) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  // Sync initialData → for edit mode
+  // Setup TipTap editor
+  const editor = useEditor({
+    extensions: [StarterKit],
+    content: draft.content,
+    onUpdate: ({ editor }) => {
+      setDraft({ ...draft, content: editor.getHTML() });
+    },
+  });
+
+  // Sync initialData → for edit mode only
   useEffect(() => {
     if (initialData) {
       setDraft({
@@ -28,11 +39,15 @@ export default function PromptForm({ onSave, initialData }) {
           ? initialData.tags
           : '',
       });
+      // Set TipTap content as well:
+      if (editor) {
+        editor.commands.setContent(initialData.content || '');
+      }
       setError(null);
     } else {
-      setError(null);
+      setError(null); // No setDraft(initialFormState) here! → let useDraft do its job
     }
-  }, [initialData, setDraft]);
+  }, [initialData, setDraft, editor]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -71,18 +86,29 @@ export default function PromptForm({ onSave, initialData }) {
     <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
       {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
 
+      <div className="max-h-[70vh] overflow-y-auto px-1">
+
       <Input
         label="Prompt Title"
         value={draft.title}
         onChange={(e) => setDraft({ ...draft, title: e.target.value })}
         required
       />
-      <Textarea
-        label="Prompt Text"
-        value={draft.content}
-        onChange={(e) => setDraft({ ...draft, content: e.target.value })}
-        required
-      />
+
+      {/* TipTap editor → Prompt Text */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+          Prompt Text
+        </label>
+        <EditorToolbar editor={editor} />
+        {/* Editor */}
+ <div className="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[150px] px-0">
+  <EditorContent editor={editor} className="tiptap-editor" />
+</div>
+
+
+</div>
+
       <Input
         label="Tags (comma-separated)"
         value={draft.tagsInput}
@@ -98,6 +124,7 @@ export default function PromptForm({ onSave, initialData }) {
           ? 'Update Prompt'
           : 'Save Prompt'}
       </Button>
+      </div>
     </form>
   );
 }

@@ -37,11 +37,11 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
   {prompt.title}
 </h2>
 
-<div className={`max-h-52 overflow-y-auto mb-2 pr-1 ${compactMode ? 'text-xs' : 'text-sm'} text-gray-500`}>
-  <p className="whitespace-pre-line">
-    {prompt.content}
-  </p>
-</div>
+<div
+  className={`max-h-52 overflow-y-auto mb-2 pr-1 ${compactMode ? 'text-xs' : 'text-sm'} text-gray-500 prose prose-sm dark:prose-invert`}
+  dangerouslySetInnerHTML={{ __html: prompt.content }}
+/>
+
 
 
           {!compactMode && (

@@ -1,9 +1,12 @@
 /** @type {import('tailwindcss').Config} */
+/* eslint-disable no-undef */
 export default {
   content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
   darkMode: 'class',
   theme: {
     extend: {},
   },
-  plugins: [],
+  plugins: [
+    require('@tailwindcss/typography'),
+  ],
 };

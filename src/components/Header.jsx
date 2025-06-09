@@ -110,14 +110,7 @@ export default function Header({
 
                 <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
 
-                <Menu.Item>
-                  {({ active }) => (
-                    <button onClick={() => setIsAboutOpen(true)} className={`${active ? 'bg-gray-100 dark:bg-gray-700' : ''} group flex items-center w-full px-4 py-2 text-sm text-blue-600 dark:text-blue-400 font-medium`}>
-                      <FiInfo className="mr-3 w-5 h-5" />
-                      About
-                    </button>
-                  )}
-                </Menu.Item>
+                
 
                 {username && (
                   <Menu.Item>
@@ -132,6 +125,14 @@ export default function Header({
                     )}
                   </Menu.Item>
                 )}
+                <Menu.Item>
+                  {({ active }) => (
+                    <button onClick={() => setIsAboutOpen(true)} className={`${active ? 'bg-gray-100 dark:bg-gray-700' : ''} group flex items-center w-full px-4 py-2 text-sm text-blue-600 dark:text-blue-400 font-medium`}>
+                      <FiInfo className="mr-3 w-5 h-5" />
+                      About
+                    </button>
+                  )}
+                </Menu.Item>
               </div>
             </Menu.Items>
           </Menu>
