@@ -1,23 +1,29 @@
 # Persona Vault 🗂️✨
 
-**Persona Vault** is a lightweight personal vault to manage **Personas** and **Prompts**.  
-The project combines a modern **React + Vite** frontend with a simple **PHP + MySQL** backend API.
+**Persona Vault** is een krachtige en minimalistische vault voor het beheren van **Personas** en **Prompts**.  
+Het combineert een moderne **React + Vite** frontend met een eenvoudige en veilige **PHP + MySQL** backend API.
 
-Ideal as a base for personal use, prototype tools, or future commercial SaaS extensions.
+Ideaal voor **persoonlijk gebruik**, **AI prompt engineering**, **content creatie workflows**, of als basis voor toekomstige **SaaS-uitbreidingen**.
 
 ---
 
 ## 🚀 Features
 
-✅ Manage **Personas** and **Prompts**  
-✅ Add / Edit / Delete / Favorite items  
-✅ Tag-based filtering  
-✅ Favorites filtering  
-✅ Search with instant feedback  
-✅ Dynamic UI → works fully without page reloads  
-✅ Simple API → future-proof for multi-user support  
-✅ Responsive & Dark mode supported  
-✅ Modern component-based code structure  
+✅ Beheer van **Personas** en **Prompts**  
+✅ **Add / Edit / Delete / Favorite** functionaliteit  
+✅ **Tag-based filtering** + **Tag counter**  
+✅ **Quick Titles** overzicht + **1-click copy**  
+✅ **Favorites filter**  
+✅ **Dynamic Search** met instant feedback  
+✅ **Independent scrolling per tab** (Personas / Prompts → UX polished)  
+✅ **Infinite lazy loading** per tab  
+✅ **Dynamic Page Title** → `"Username's Vault"` + live count  
+✅ **Try in Platform** buttons (AI / ChatGPT integration ready)  
+✅ **Import / Export** met **Merge / Replace** ondersteuning  
+✅ **Persistent draft save** (Persona / Prompt draft autosave via LocalStorage)  
+✅ **Responsive Design** + Full **Dark mode**  
+✅ **Sticky Scroll-to-Top button** (Premium UX)  
+✅ **Modern UI / UX** (Industry standard level)
 
 ---
 
@@ -27,15 +33,17 @@ Ideal as a base for personal use, prototype tools, or future commercial SaaS ext
 
 - **React** (via [Vite](https://vitejs.dev/))
 - TailwindCSS
-- React Hooks / Functional components
-- No complex state manager (easy to maintain)
+- React Hooks / Functional Components
+- No Redux / No Complex State Manager (easy to maintain)
+- LocalStorage for UX enhancements
 
 ### Backend
 
-- **PHP** REST API (modern PSR compliant style)
+- **PHP** REST API (modern PSR-style endpoints)
 - MySQL database
 - PDO for secure DB access
-- Fully CORS ready
+- Full CORS ready
+- Simple Token-based Auth (JWT-ready)
 
 ---
 
