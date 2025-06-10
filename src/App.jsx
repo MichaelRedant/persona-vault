@@ -227,7 +227,8 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
   createPrompt={createPrompt}   // ✅ toevoegen
   deletePersona={deletePersona}    // ✅ toevoegen
   deletePrompt={deletePrompt} 
-  handleUpdateTags={handleUpdateTags} // ✅ toevoegen
+  handleUpdateTags={handleUpdateTags}
+  
 />
 
 
@@ -369,6 +370,8 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
   <ProfileModal
   decodedToken={decodedToken}
   personaCount={personaCount}
+  personas={personas}   // <--- DIT TOEVOEGEN
+  prompts={prompts} 
   promptCount={promptCount}
   favoriteCount={favoriteCount}
   promptsWithoutTagCount={promptsWithoutTagCount}

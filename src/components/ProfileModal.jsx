@@ -1,5 +1,6 @@
 import { FiLogOut, FiX, FiDownload, FiPlus } from 'react-icons/fi';
 import Button from './Button';
+import TagAnalyticsWithBadges from './TagAnalyticsWithBadges';
 
 export default function ProfileModal({
   decodedToken,
@@ -12,7 +13,9 @@ export default function ProfileModal({
   promptsWithoutTagCount,
   onNewPrompt,
   onNewPersona,
-  onExport
+  onExport,
+  personas,           // ✅ toegevoegd
+  prompts             // ✅ toegevoegd
 }) {
   const { username, email, iat } = decodedToken || {};
 
@@ -35,14 +38,18 @@ export default function ProfileModal({
 
         {/* Profile header */}
         <div>
-          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">{username || 'Unknown'}</h3>
+          <h3 className="text-2xl font-bold text-gray-900 dark:text-white">
+            {username || 'Unknown'}
+          </h3>
           {email && <p className="text-sm text-gray-500 dark:text-gray-400">{email}</p>}
           <p className="text-sm text-gray-500 dark:text-gray-400"></p>
         </div>
 
         {/* Activity overview */}
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2 text-sm text-gray-700 dark:text-gray-200">
-          <div className="uppercase tracking-wide text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">Activity</div>
+          <div className="uppercase tracking-wide text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
+            Activity
+          </div>
           <div className="grid grid-cols-2 gap-y-1">
             <div>Personas:</div>
             <div className="text-right">{personaCount}</div>
@@ -61,38 +68,43 @@ export default function ProfileModal({
           </div>
         </div>
 
+        {/* Tag Analytics */}
+        <TagAnalyticsWithBadges personas={personas} prompts={prompts} topN={5} />
+
         {/* Login info */}
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-1 text-xs text-gray-500 dark:text-gray-400">
-          <div className="uppercase tracking-wide text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">Session info</div>
-          {iat && <p>Logged in at: {new Date(iat * 1000).toLocaleString()}</p>}
+          <div className="uppercase tracking-wide text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
+            Session info
+          </div>
+          {iat && (
+            <p>Logged in at: {new Date(iat * 1000).toLocaleString()}</p>
+          )}
         </div>
 
         {/* Actions */}
         <div className="flex flex-col space-y-2 mt-6 border-t border-gray-200 dark:border-gray-700 pt-4">
+          <Button variant="primary" onClick={onNewPersona}>
+            <FiPlus className="mr-2" />
+            New persona
+          </Button>
 
-  <Button variant="primary" onClick={onNewPersona}>
-    <FiPlus className="mr-2" />
-    New persona
-  </Button>
+          <Button variant="primary" onClick={onNewPrompt}>
+            <FiPlus className="mr-2" />
+            New prompt
+          </Button>
 
-  <Button variant="primary" onClick={onNewPrompt}>
-    <FiPlus className="mr-2" />
-    New prompt
-  </Button>
+          <Button variant="outline" onClick={onExport}>
+            <FiDownload className="mr-2" />
+            Export all
+          </Button>
 
-  <Button variant="outline" onClick={onExport}>
-    <FiDownload className="mr-2" />
-    Export all
-  </Button>
+          <Button variant="danger" onClick={onLogout}>
+            <FiLogOut className="mr-2" />
+            Log out
+          </Button>
+        </div>
 
-  <Button variant="danger" onClick={onLogout}>
-    <FiLogOut className="mr-2" />
-    Log out
-  </Button>
-</div>
-
-
-
+        {/* Animations */}
         <style jsx="true">{`
           @keyframes fade-in {
             from { opacity: 0; }

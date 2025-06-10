@@ -44,5 +44,6 @@ export default function Profile() {
         <p className="text-red-600">Geen geldige logingegevens gevonden.</p>
       )}
     </div>
+    
   );
 }

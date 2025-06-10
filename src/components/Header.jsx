@@ -171,16 +171,17 @@ export default function Header({
         </div>
 
         <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
-        <TagManagerModal
+        
+
+      </header>
+      {/* Tag Manager Modal */}
+      <TagManagerModal
   isOpen={isTagManagerOpen}
   onClose={() => setIsTagManagerOpen(false)}
   personas={personas}
   prompts={prompts}
   onUpdateTags={handleUpdateTags}
 />
-
-      </header>
-
       {/* Merge / Replace Modal */}
       <MergeOrReplaceModal
         isOpen={mergeModalOpen}
