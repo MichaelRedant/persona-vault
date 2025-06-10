@@ -17,6 +17,8 @@ import ProfileModal from './components/ProfileModal';
 import SettingsModal from './components/SettingsModal';
 import FloatingInstallBanner from './components/FloatingInstallBanner';
 import TagFilterDropdown from './components/TagFilterDropdown';
+import QuickTitlesDropdown from './components/QuickTitlesDropdown.jsx';
+import ScrollToTopButton from './components/ScrollToTopButton';
 import './index.css';
 
 function App() {
@@ -28,8 +30,7 @@ function App() {
   const [globalToastMessage, setGlobalToastMessage] = useState('');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
-  const [visiblePersonas, setVisiblePersonas] = useState(20);
-  const [visiblePrompts, setVisiblePrompts] = useState(20);
+
 
 
   const [selectedTab, setSelectedTab] = useState(() => {
@@ -107,6 +108,15 @@ useEffect(() => {
     }
   }, [token, fetchPersonas, fetchPrompts]);
 
+  const personaCount = personas.length;
+  const promptCount = prompts.length;
+  useEffect(() => {
+  const displayUsername = username ? `${username}'s Vault` : 'Persona Vault';
+  document.title = `${displayUsername} (${personaCount} Personas | ${promptCount} Prompts)`;
+}, [personaCount, promptCount, username]);
+
+
+
   useEffect(() => {
     localStorage.setItem('vault_selectedTab', selectedTab);
   }, [selectedTab]);
@@ -124,14 +134,16 @@ useEffect(() => {
       </AuthLayout>
     );
   }
+  
 
   
 
-  const personaCount = personas.length;
-const promptCount = prompts.length;
+
+
 const favoriteCount =
   prompts.filter(p => p.favorite === true || p.favorite === 1 || p.favorite === 'true').length +
   personas.filter(p => p.favorite === true || p.favorite === 1 || p.favorite === 'true').length;
+
 
 const promptsWithoutTagCount = prompts.filter(p => !p.tags || p.tags.length === 0).length;
 
@@ -142,6 +154,17 @@ const allTags = [...personas, ...prompts]
 const tagsUsed = allTags.length;
 
 
+const handleTagToggle = (tag) => {
+  if (tag === 'ALL') {
+    setActiveTags([]);
+  } else {
+    setActiveTags((prev) =>
+      prev.includes(tag)
+        ? prev.filter((t) => t !== tag)
+        : [...prev, tag]
+    );
+  }
+};
 
   return (
     <main className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-500 px-2 sm:px-4">
@@ -181,34 +204,14 @@ const tagsUsed = allTags.length;
   <TagFilterDropdown
     tags={[...personas.map((p) => p.tags || []), ...prompts.map((p) => p.tags || [])]}
     activeTags={activeTags}
-    onTagToggle={(tag) => {
-      if (tag === 'ALL') {
-        setActiveTags([]);
-      } else {
-        setActiveTags((prev) =>
-          prev.includes(tag)
-            ? prev.filter((t) => t !== tag)
-            : [...prev, tag]
-        );
-      }
-    }}
+    onTagToggle={handleTagToggle}
   />
+  <QuickTitlesDropdown
+    personaItems={personas.map(p => ({ title: p.name, content: p.description }))}
+    promptItems={prompts.map(p => ({ title: p.title, content: p.content }))}
+    onShowToast={setGlobalToastMessage} // ✅ toevoegen zodat toast kan getoond worden
+/>
 
- {/*  <TagsFilter
-    tags={[...personas.map((p) => p.tags || []), ...prompts.map((p) => p.tags || [])]}
-    activeTags={activeTags}
-    onTagToggle={(tag) => {
-      if (tag === 'ALL') {
-        setActiveTags([]);
-      } else {
-        setActiveTags((prev) =>
-          prev.includes(tag)
-            ? prev.filter((t) => t !== tag)
-            : [...prev, tag]
-        );
-      }
-    }}
-  /> */}
 </div>
 
 
@@ -265,7 +268,7 @@ const tagsUsed = allTags.length;
           )}
 
           <PersonaDashboard
-            personas={personas.slice(0, visiblePersonas)}
+            personas={personas}
             setPersonas={setPersonas}
             fetchPersonas={fetchPersonas}
             createPersona={createPersona}
@@ -279,7 +282,6 @@ const tagsUsed = allTags.length;
             onShowToast={setGlobalToastMessage}
             onSortChange={setPersonaSortOption}
             compactMode={compactMode}
-            onLoadMore={() => setVisiblePersonas((prev) => prev + 10)}
           />
         </div>
 
@@ -308,7 +310,7 @@ const tagsUsed = allTags.length;
           )}
 
           <PromptDashboard
-            prompts={prompts.slice(0, visiblePrompts)}
+            prompts={prompts}
             setPrompts={setPrompts}
             fetchPrompts={fetchPrompts}
             createPrompt={createPrompt}
@@ -322,7 +324,6 @@ const tagsUsed = allTags.length;
             sortOption={promptSortOption}
             setSortOption={setPromptSortOption}
             compactMode={compactMode}
-            onLoadMore={() => setVisiblePrompts((prev) => prev + 10)}
           />
         </div>
       </div>
@@ -383,6 +384,8 @@ const tagsUsed = allTags.length;
   onOpenSettings={() => setIsSettingsModalOpen(true)}
 /> */}
 <FloatingInstallBanner />
+<ScrollToTopButton />
+
     </main>
   );
 }
