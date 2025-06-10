@@ -216,117 +216,115 @@ const handleTagToggle = (tag) => {
 
 
       <div className="max-w-5xl mx-auto mb-8 mt-4">
-        <div className="flex flex-col sm:flex-row sm:justify-center sm:space-x-4 space-y-2 sm:space-y-0">
-          <button
-            onClick={() => setSelectedTab('personas')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ease-in-out duration-200 transform ${
-              selectedTab === 'personas'
-                ? 'bg-blue-600 text-white scale-105 shadow-md'
-                : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
-            } focus:outline-none focus:ring-2 focus:ring-blue-400`}
-          >
-            Personas
-          </button>
 
-          <button
-            onClick={() => setSelectedTab('prompts')}
-            className={`px-4 py-2 rounded-full text-sm font-medium transition-all ease-in-out duration-200 transform ${
-              selectedTab === 'prompts'
-                ? 'bg-blue-600 text-white scale-105 shadow-md'
-                : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
-            } focus:outline-none focus:ring-2 focus:ring-blue-400`}
-          >
-            Prompts
-          </button>
-        </div>
-      </div>
+  <div className="flex flex-col sm:flex-row sm:justify-center sm:space-x-4 space-y-2 sm:space-y-0">
+    <button
+      onClick={() => setSelectedTab('personas')}
+      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ease-in-out duration-200 transform ${
+        selectedTab === 'personas'
+          ? 'bg-blue-600 text-white scale-105 shadow-md'
+          : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
+      } focus:outline-none focus:ring-2 focus:ring-blue-400`}
+    >
+      Personas
+    </button>
 
-      <div className="max-w-5xl mx-auto relative min-h-[400px]">
+    <button
+      onClick={() => setSelectedTab('prompts')}
+      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ease-in-out duration-200 transform ${
+        selectedTab === 'prompts'
+          ? 'bg-blue-600 text-white scale-105 shadow-md'
+          : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
+      } focus:outline-none focus:ring-2 focus:ring-blue-400`}
+    >
+      Prompts
+    </button>
+  </div>
 
-        <div
-          className={`transition-opacity duration-500 ease-in-out absolute top-0 left-0 w-full ${
-            selectedTab === 'personas' ? 'opacity-100 pointer-events-auto static' : 'opacity-0 pointer-events-none'
-          }`}
-        >
-          <div className="flex flex-wrap justify-between items-center gap-y-2 mb-4">
-            <h2 className="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 mb-2 flex items-center space-x-2">
-              <span>Persona Dashboard</span>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">({personas.length})</span>
-            </h2>
+</div>
 
-            <SortDropdown
-              sortOption={personaSortOption}
-              onSortChange={setPersonaSortOption}
-            />
-          </div>
+{/* Independent scrolling blocks → fix for issue */}
+<div className="max-w-5xl mx-auto mb-16">
 
-          {loadingPersonas && (
-            <p className="text-center text-sm text-gray-500 mb-4">Loading personas...</p>
-          )}
-          {errorPersonas && (
-            <p className="text-center text-sm text-red-500 mb-4">Error loading personas</p>
-          )}
+  {/* Persona Dashboard */}
+  <div className={`${selectedTab === 'personas' ? 'block' : 'hidden'}`}>
+    <div className="flex flex-wrap justify-between items-center gap-y-2 mb-4">
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 mb-2 flex items-center space-x-2">
+        <span>Persona Dashboard</span>
+        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">({personas.length})</span>
+      </h2>
 
-          <PersonaDashboard
-            personas={personas}
-            setPersonas={setPersonas}
-            fetchPersonas={fetchPersonas}
-            createPersona={createPersona}
-            updatePersona={updatePersona}
-            deletePersona={deletePersona}
-            updatePersonaFavorite={updatePersonaFavorite}
-            searchTerm={searchTerm}
-            activeTags={activeTags}
-            showFavoritesOnly={showFavoritesOnly}
-            sortOption={personaSortOption}
-            onShowToast={setGlobalToastMessage}
-            onSortChange={setPersonaSortOption}
-            compactMode={compactMode}
-          />
-        </div>
+      <SortDropdown
+        sortOption={personaSortOption}
+        onSortChange={setPersonaSortOption}
+      />
+    </div>
 
-        <div
-          className={`transition-opacity duration-500 ease-in-out absolute top-0 left-0 w-full ${
-            selectedTab === 'prompts' ? 'opacity-100 pointer-events-auto static' : 'opacity-0 pointer-events-none'
-          }`}
-        >
-          <div className="flex flex-wrap justify-between items-center gap-y-2 mb-4">
-            <h2 className="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 mb-2 flex items-center space-x-2">
-              <span>Prompt Dashboard</span>
-              <span className="text-sm font-medium text-gray-500 dark:text-gray-400">({prompts.length})</span>
-            </h2>
+    {loadingPersonas && (
+      <p className="text-center text-sm text-gray-500 mb-4">Loading personas...</p>
+    )}
+    {errorPersonas && (
+      <p className="text-center text-sm text-red-500 mb-4">Error loading personas</p>
+    )}
 
-            <SortDropdown
-              sortOption={promptSortOption}
-              onSortChange={setPromptSortOption}
-            />
-          </div>
+    <PersonaDashboard
+      personas={personas}
+      setPersonas={setPersonas}
+      fetchPersonas={fetchPersonas}
+      createPersona={createPersona}
+      updatePersona={updatePersona}
+      deletePersona={deletePersona}
+      updatePersonaFavorite={updatePersonaFavorite}
+      searchTerm={searchTerm}
+      activeTags={activeTags}
+      showFavoritesOnly={showFavoritesOnly}
+      sortOption={personaSortOption}
+      onShowToast={setGlobalToastMessage}
+      onSortChange={setPersonaSortOption}
+      compactMode={compactMode}
+    />
+  </div>
 
-          {loadingPrompts && (
-            <p className="text-center text-sm text-gray-500 mb-4">Loading prompts...</p>
-          )}
-          {errorPrompts && (
-            <p className="text-center text-sm text-red-500 mb-4">Error loading prompts</p>
-          )}
+  {/* Prompt Dashboard */}
+  <div className={`${selectedTab === 'prompts' ? 'block' : 'hidden'}`}>
+    <div className="flex flex-wrap justify-between items-center gap-y-2 mb-4">
+      <h2 className="text-2xl font-semibold tracking-tight text-gray-800 dark:text-gray-100 mb-2 flex items-center space-x-2">
+        <span>Prompt Dashboard</span>
+        <span className="text-sm font-medium text-gray-500 dark:text-gray-400">({prompts.length})</span>
+      </h2>
 
-          <PromptDashboard
-            prompts={prompts}
-            setPrompts={setPrompts}
-            fetchPrompts={fetchPrompts}
-            createPrompt={createPrompt}
-            updatePrompt={updatePrompt}
-            deletePrompt={deletePrompt}
-            updatePromptFavorite={updatePromptFavorite}
-            searchTerm={searchTerm}
-            onShowToast={setGlobalToastMessage}
-            activeTags={activeTags}
-            showFavoritesOnly={showFavoritesOnly}
-            sortOption={promptSortOption}
-            setSortOption={setPromptSortOption}
-            compactMode={compactMode}
-          />
-        </div>
-      </div>
+      <SortDropdown
+        sortOption={promptSortOption}
+        onSortChange={setPromptSortOption}
+      />
+    </div>
+
+    {loadingPrompts && (
+      <p className="text-center text-sm text-gray-500 mb-4">Loading prompts...</p>
+    )}
+    {errorPrompts && (
+      <p className="text-center text-sm text-red-500 mb-4">Error loading prompts</p>
+    )}
+
+    <PromptDashboard
+      prompts={prompts}
+      setPrompts={setPrompts}
+      fetchPrompts={fetchPrompts}
+      createPrompt={createPrompt}
+      updatePrompt={updatePrompt}
+      deletePrompt={deletePrompt}
+      updatePromptFavorite={updatePromptFavorite}
+      searchTerm={searchTerm}
+      onShowToast={setGlobalToastMessage}
+      activeTags={activeTags}
+      showFavoritesOnly={showFavoritesOnly}
+      sortOption={promptSortOption}
+      setSortOption={setPromptSortOption}
+      compactMode={compactMode}
+    />
+  </div>
+
+</div>
 
       {isProfileModalOpen && decodedToken && (
   <ProfileModal

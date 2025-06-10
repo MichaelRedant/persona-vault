@@ -72,7 +72,7 @@ export default function Header({
   return (
     <>
       <header className="sticky top-0 z-50 backdrop-blur-md bg-gray-100/70 dark:bg-gray-900/70 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex flex-wrap items-center justify-between max-w-5xl mx-auto px-4 py-3 gap-y-2">
+        <div className="flex items-center justify-between max-w-5xl mx-auto px-4 h-16">
           {/* Logo */}
           <div className="flex items-center space-x-3">
             <img src={logoLight} alt="Persona Vault Logo" className="h-12 w-auto block dark:hidden" />
@@ -82,7 +82,7 @@ export default function Header({
           {/* Right side */}
           <div className="flex items-center space-x-3">
             {/* Search */}
-            <div className="hidden sm:block w-64">
+            <div className="hidden sm:flex w-64 items-center">
               <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search..." />
             </div>
 

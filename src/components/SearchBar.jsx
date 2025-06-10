@@ -9,7 +9,7 @@ export default function SearchBar({ value, onChange, placeholder = 'Search...' }
   }, []);
 
   return (
-    <div className="mb-4">
+    <div className="w-full">
       <Input
         ref={inputRef}
         value={value}

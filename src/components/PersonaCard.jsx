@@ -42,9 +42,10 @@ export default function PersonaCard({ persona, compactMode, onToggleFavorite, on
 </h2>
 
 <div
-  className={`max-h-52 overflow-y-auto mb-2 pr-1 ${compactMode ? 'text-xs' : 'text-sm'} text-gray-500 prose prose-sm dark:prose-invert`}
+  className={`max-h-[150px] overflow-y-auto mb-2 pr-1 ${compactMode ? 'text-xs' : 'text-sm'} text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none`}
   dangerouslySetInnerHTML={{ __html: persona.description }}
 />
+
 
 
           {!compactMode && (
@@ -62,47 +63,48 @@ export default function PersonaCard({ persona, compactMode, onToggleFavorite, on
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-2 justify-end sm:justify-start">
-          <Button
-            onClick={() => onToggleFavorite(persona.id, persona.favorite)}
-            variant="success"
-            icon={persona.favorite ? <AiFillStar /> : <AiOutlineStar />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Favorite"
-          />
+        <div className="flex flex-wrap gap-2 justify-center mt-4">
+  <Button
+    onClick={() => onToggleFavorite(persona.id, persona.favorite)}
+    variant="success"
+    icon={persona.favorite ? <AiFillStar /> : <AiOutlineStar />}
+    className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+    title="Favorite"
+  />
 
-          <Button
-            onClick={() => handleCopy(persona.description)}
-            variant="secondary"
-            icon={<FiCopy />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Copy to Clipboard"
-          />
+  <Button
+    onClick={() => handleCopy(persona.description)}
+    variant="secondary"
+    icon={<FiCopy />}
+    className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+    title="Copy to Clipboard"
+  />
 
-          <Button
-            onClick={() => onEdit(persona)}
-            variant="primary"
-            icon={<FiEdit2 />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Edit"
-          />
+  <Button
+    onClick={() => onEdit(persona)}
+    variant="primary"
+    icon={<FiEdit2 />}
+    className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+    title="Edit"
+  />
 
-          <Button
-            onClick={() => setConfirmOpen(true)}
-            variant="danger"
-            icon={<FiTrash2 />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Delete"
-          />
+  <Button
+    onClick={() => setConfirmOpen(true)}
+    variant="danger"
+    icon={<FiTrash2 />}
+    className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+    title="Delete"
+  />
 
-          <Button
-            onClick={() => downloadAsJson(persona, persona.name || 'persona')}
-            variant="primary"
-            icon={<FiDownload />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Export"
-          />
-        </div>
+  <Button
+    onClick={() => downloadAsJson(persona, persona.name || 'persona')}
+    variant="primary"
+    icon={<FiDownload />}
+    className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+    title="Export"
+  />
+</div>
+
       </div>
 
       {/* Try in Platform → under card */}

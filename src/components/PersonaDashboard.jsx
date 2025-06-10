@@ -1,4 +1,3 @@
-// src/components/PersonaDashboard.jsx
 import Modal from './Modal';
 import PersonaForm from './PersonaForm';
 import PersonaCard from './PersonaCard';
@@ -20,82 +19,89 @@ export default function PersonaDashboard({
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPersona, setEditingPersona] = useState(null);
+  const [isEditing, setIsEditing] = useState(false); // ✅ nieuw → track Add of Edit mode
   const [visibleCount, setVisibleCount] = useState(20);
   const loadMoreRef = useRef();
 
-  // Filtered personas → FIRST define this:
-const filteredPersonas = personas
-  .filter((item) =>
-    (!showFavoritesOnly || item.favorite) &&
-    (activeTags.length === 0 || (item.tags || []).some(tag => activeTags.includes(tag))) &&
-    (
-      item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+  const filteredPersonas = personas
+    .filter((item) =>
+      (!showFavoritesOnly || item.favorite) &&
+      (activeTags.length === 0 || (item.tags || []).some(tag => activeTags.includes(tag))) &&
+      (
+        item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.description?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     )
-  )
-  .sort((a, b) => {
-    if (sortOption === 'newest') return b.id - a.id;
-    if (sortOption === 'oldest') return a.id - b.id;
-    if (sortOption === 'alphabetical') return a.name.localeCompare(b.name);
-    if (sortOption === 'favorites') return (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0);
-    return 0;
-  });
+    .sort((a, b) => {
+      if (sortOption === 'newest') return b.id - a.id;
+      if (sortOption === 'oldest') return a.id - b.id;
+      if (sortOption === 'alphabetical') return a.name.localeCompare(b.name);
+      if (sortOption === 'favorites') return (b.favorite ? 1 : 0) - (a.favorite ? 1 : 0);
+      return 0;
+    });
 
-// "Has more" logic → important for Lazy Load trigger
-const hasMore = visibleCount < filteredPersonas.length;
+  const hasMore = visibleCount < filteredPersonas.length;
 
-// Load more function
-const handleLoadMore = () => {
-  setVisibleCount((prev) => prev + 20);
-};
-
-// Observer for infinite scroll
-useEffect(() => {
-  const currentElement = loadMoreRef.current;
-
-  const observer = new IntersectionObserver(
-    (entries) => {
-      if (entries[0].isIntersecting) {
-        handleLoadMore();
-      }
-    },
-    { threshold: 1 }
-  );
-
-  if (currentElement) {
-    observer.observe(currentElement);
-  }
-
-  return () => {
-    if (currentElement) {
-      observer.unobserve(currentElement);
-    }
+  const handleLoadMore = () => {
+    setVisibleCount((prev) => prev + 20);
   };
-}, [filteredPersonas.length, visibleCount]);
 
-// 🚀 UX polish: Reset visibleCount when search or filters change
-useEffect(() => {
-  setVisibleCount(20);
-}, [searchTerm, activeTags, showFavoritesOnly]);
+  useEffect(() => {
+    const currentElement = loadMoreRef.current;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting) {
+          handleLoadMore();
+        }
+      },
+      { threshold: 1 }
+    );
+
+    if (currentElement) {
+      observer.observe(currentElement);
+    }
+
+    return () => {
+      if (currentElement) {
+        observer.unobserve(currentElement);
+      }
+    };
+  }, [filteredPersonas.length, visibleCount]);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [searchTerm, activeTags, showFavoritesOnly]);
+
   const handleSavePersona = async (persona) => {
     if (editingPersona) {
       await updatePersona(persona.id, persona.name, persona.description, persona.tags);
-      await fetchPersonas();
       onShowToast('Persona updated successfully!');
     } else {
       await createPersona(persona.name, persona.description, persona.tags);
-      await fetchPersonas();
       onShowToast('Persona created successfully!');
     }
 
+    await fetchPersonas();
     setIsModalOpen(false);
     setEditingPersona(null);
+    setIsEditing(false);
+
+    // 🧹 Clear draft always after Save
+    localStorage.removeItem('vault_draft_persona');
   };
 
   const startEdit = (persona) => {
     setEditingPersona(persona);
+    setIsEditing(true); // ✅ we zitten in edit mode
+    setIsModalOpen(true);
+  };
+
+  const startCreate = () => {
+    setEditingPersona(null);
+    setIsEditing(false); // ✅ we zitten in add mode → laat draft bestaan
     setIsModalOpen(true);
   };
 
@@ -108,12 +114,9 @@ useEffect(() => {
   return (
     <div className="p-6">
       <div className="flex justify-end mb-6">
-        <Button onClick={() => { setEditingPersona(null); setIsModalOpen(true); }}>
-          + Add Persona
-        </Button>
+        <Button onClick={startCreate}>+ Add Persona</Button>
       </div>
 
-      {/* Empty state */}
       {filteredPersonas.length === 0 ? (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
           <p className="text-lg mb-2">No personas found.</p>
@@ -136,25 +139,33 @@ useEffect(() => {
         ))
       )}
 
-      {/* Lazy Loading Trigger */}
-     {hasMore && (
-  <div ref={loadMoreRef} className="h-16 flex justify-center items-center">
-    <div className="relative w-6 h-6">
-      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin"></div>
-      <div className="absolute inset-0 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
-    </div>
-    <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">Loading more...</span>
-  </div>
-)}
+      {hasMore && (
+        <div ref={loadMoreRef} className="h-16 flex justify-center items-center">
+          <div className="relative w-6 h-6">
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+          </div>
+          <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">Loading more...</span>
+        </div>
+      )}
 
-
-
-      {/* Modal */}
+      {/* Modal met key om form te resetten */}
       <Modal isOpen={isModalOpen} onClose={() => {
         setIsModalOpen(false);
         setEditingPersona(null);
+
+        // 🧹 Alleen clear draft als we in edit mode waren
+        if (isEditing) {
+          localStorage.removeItem('vault_draft_persona');
+        }
+
+        setIsEditing(false);
       }}>
-        <PersonaForm onSave={handleSavePersona} initialData={editingPersona} />
+        <PersonaForm
+          key={editingPersona ? editingPersona.id : 'new'}
+          onSave={handleSavePersona}
+          initialData={editingPersona}
+        />
       </Modal>
     </div>
   );
