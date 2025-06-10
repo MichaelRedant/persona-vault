@@ -166,6 +166,44 @@ const handleTagToggle = (tag) => {
   }
 };
 
+const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
+  if (action === 'rename') {
+    setPersonas(prev => prev.map(p => ({
+      ...p,
+      tags: (p.tags || []).map(t => t === targetTag ? newTag : t)
+    })));
+    setPrompts(prev => prev.map(p => ({
+      ...p,
+      tags: (p.tags || []).map(t => t === targetTag ? newTag : t)
+    })));
+  }
+
+  if (action === 'delete') {
+    setPersonas(prev => prev.map(p => ({
+      ...p,
+      tags: (p.tags || []).filter(t => t !== targetTag)
+    })));
+    setPrompts(prev => prev.map(p => ({
+      ...p,
+      tags: (p.tags || []).filter(t => t !== targetTag)
+    })));
+  }
+
+  if (action === 'merge') {
+    setPersonas(prev => prev.map(p => ({
+      ...p,
+      tags: (p.tags || []).map(t => t === sourceTag ? newTag : t)
+    })));
+    setPrompts(prev => prev.map(p => ({
+      ...p,
+      tags: (p.tags || []).map(t => t === sourceTag ? newTag : t)
+    })));
+  }
+
+  setGlobalToastMessage(`Tags updated! (${action})`);
+};
+
+
   return (
     <main className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-500 px-2 sm:px-4">
 
@@ -189,6 +227,7 @@ const handleTagToggle = (tag) => {
   createPrompt={createPrompt}   // ✅ toevoegen
   deletePersona={deletePersona}    // ✅ toevoegen
   deletePrompt={deletePrompt} 
+  handleUpdateTags={handleUpdateTags} // ✅ toevoegen
 />
 
 

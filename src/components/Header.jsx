@@ -5,7 +5,7 @@ import AboutModal from './AboutModal';
 import SearchBar from './SearchBar';
 import { HiDotsVertical } from 'react-icons/hi';
 import { FiUpload, FiDownload, FiInfo, FiSettings } from 'react-icons/fi';
-
+import TagManagerModal from './TagManagerModal';
 import logoLight from '/logo-light.svg';
 import logoDark from '/logo-dark.svg';
 import MergeOrReplaceModal from './MergeOrReplaceModal';
@@ -23,11 +23,12 @@ export default function Header({
   fetchPrompts,
   deletePersona,
   deletePrompt,
+   handleUpdateTags, 
 }) {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
   const [pendingImportData, setPendingImportData] = useState(null);
-
+  const [isTagManagerOpen, setIsTagManagerOpen] = useState(false);
   const exportData = () => {
     const data = {
       personas,
@@ -133,6 +134,17 @@ export default function Header({
                     </Menu.Item>
                   )}
                   <Menu.Item>
+  {({ active }) => (
+    <button
+      onClick={() => setIsTagManagerOpen(true)}
+      className={`${active ? 'bg-gray-100 dark:bg-gray-700' : ''} group flex items-center w-full px-4 py-2 text-sm`}
+    >
+      🏷 Manage Tags
+    </button>
+  )}
+</Menu.Item>
+
+                  <Menu.Item>
                     {({ active }) => (
                       <button
                         onClick={() => setIsAboutOpen(true)}
@@ -159,6 +171,14 @@ export default function Header({
         </div>
 
         <AboutModal isOpen={isAboutOpen} onClose={() => setIsAboutOpen(false)} />
+        <TagManagerModal
+  isOpen={isTagManagerOpen}
+  onClose={() => setIsTagManagerOpen(false)}
+  personas={personas}
+  prompts={prompts}
+  onUpdateTags={handleUpdateTags}
+/>
+
       </header>
 
       {/* Merge / Replace Modal */}
