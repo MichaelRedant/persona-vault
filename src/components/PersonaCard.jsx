@@ -9,15 +9,21 @@ import Button from './Button';
 export default function PersonaCard({ persona, compactMode, onToggleFavorite, onDelete, onEdit, onShowToast }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const handleCopy = (text) => {
-    navigator.clipboard.writeText(text)
-      .then(() => {
-        onShowToast('Persona description copied to clipboard!');
-      })
-      .catch((err) => {
-        console.error('Failed to copy!', err);
-      });
-  };
+  const handleCopy = (htmlContent) => {
+  // ✅ create temp DOM element to strip tags
+  const tempElement = document.createElement('div');
+  tempElement.innerHTML = htmlContent;
+  const plainText = tempElement.innerText;
+
+  navigator.clipboard.writeText(plainText)
+    .then(() => {
+      onShowToast('Copied full content to clipboard!');
+    })
+    .catch((err) => {
+      console.error('Failed to copy!', err);
+      onShowToast('Failed to copy content.');
+    });
+};
 
   const tagsArray = Array.isArray(persona.tags)
     ? persona.tags

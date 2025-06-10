@@ -9,17 +9,21 @@ import { FiEdit2, FiTrash2, FiDownload, FiCopy } from 'react-icons/fi';
 export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDelete, onEdit, onShowToast }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
-  const handleCopy = (text) => {
-    const safeText = text || '';
-    navigator.clipboard.writeText(safeText)
-      .then(() => {
-        onShowToast('Prompt copied to clipboard!');
-      })
-      .catch((err) => {
-        console.error('Failed to copy!', err);
-        onShowToast('Failed to copy prompt.');
-      });
-  };
+  const handleCopy = (htmlContent) => {
+  // ✅ create temp DOM element to strip tags
+  const tempElement = document.createElement('div');
+  tempElement.innerHTML = htmlContent;
+  const plainText = tempElement.innerText;
+
+  navigator.clipboard.writeText(plainText)
+    .then(() => {
+      onShowToast('Copied full content to clipboard!');
+    })
+    .catch((err) => {
+      console.error('Failed to copy!', err);
+      onShowToast('Failed to copy content.');
+    });
+};
 
   const tagsArray = Array.isArray(prompt.tags)
     ? prompt.tags

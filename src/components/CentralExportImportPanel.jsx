@@ -1,58 +1,62 @@
+// src/components/CentralExportImportPanel.jsx
 import { useState } from 'react';
 
 export default function CentralExportImportPanel({ personas, setPersonas, prompts, setPrompts }) {
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [importDropdownOpen, setImportDropdownOpen] = useState(false);
 
-  const handleExport = (type) => {
-    const data = type === 'personas' ? personas : prompts;
-    const json = JSON.stringify(data, null, 2);
-    const blob = new Blob([json], { type: 'application/json' });
+  const handleExport = () => {
+    const vaultData = {
+      personas,
+      prompts,
+    };
+
+    const jsonStr = JSON.stringify(vaultData, null, 2);
+    const blob = new Blob([jsonStr], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.href = url;
-    link.download = `${type}-export.json`;
+    link.download = `vault_export.json`;
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
     URL.revokeObjectURL(url);
+
     setExportDropdownOpen(false); // Close dropdown after export
   };
 
-  const handleImportClick = (type) => {
-    // Trigger hidden file input with specific type context
+  const handleImportClick = () => {
     const fileInput = document.createElement('input');
     fileInput.type = 'file';
     fileInput.accept = 'application/json';
-    fileInput.onchange = (e) => handleImport(e, type);
+    fileInput.onchange = (e) => handleImport(e);
     fileInput.click();
     setImportDropdownOpen(false); // Close dropdown after click
   };
 
-  const handleImport = (e, type) => {
+  const handleImport = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+
     const reader = new FileReader();
     reader.onload = (event) => {
       try {
         const importedData = JSON.parse(event.target.result);
-        if (Array.isArray(importedData)) {
-          if (type === 'personas') {
-            setPersonas(importedData);
-            alert('Imported Personas successfully!');
-          } else if (type === 'prompts') {
-            setPrompts(importedData);
-            alert('Imported Prompts successfully!');
-          } else {
-            alert('Invalid import type!');
-          }
+
+        // ✅ Vault structure check
+        if (importedData.personas && importedData.prompts) {
+          setPersonas(importedData.personas);
+          setPrompts(importedData.prompts);
+          alert('Vault import successful!');
         } else {
-          alert('Invalid JSON structure!');
+          alert('Invalid Vault file: expected { personas, prompts } structure.');
         }
-      } catch {
-  alert('Invalid JSON file!');
-}
+      } catch (error) {
+        console.error('Error importing Vault:', error);
+        alert('Error reading file.');
+      }
     };
+
     reader.readAsText(file);
   };
 
@@ -70,16 +74,10 @@ export default function CentralExportImportPanel({ personas, setPersonas, prompt
         {exportDropdownOpen && (
           <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-10">
             <button
-              onClick={() => handleExport('personas')}
+              onClick={handleExport}
               className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              Export Personas
-            </button>
-            <button
-              onClick={() => handleExport('prompts')}
-              className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              Export Prompts
+              Export Vault
             </button>
           </div>
         )}
@@ -97,16 +95,10 @@ export default function CentralExportImportPanel({ personas, setPersonas, prompt
         {importDropdownOpen && (
           <div className="absolute right-0 mt-2 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-10">
             <button
-              onClick={() => handleImportClick('personas')}
+              onClick={handleImportClick}
               className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
             >
-              Import Personas
-            </button>
-            <button
-              onClick={() => handleImportClick('prompts')}
-              className="block w-full text-left px-4 py-2 text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700"
-            >
-              Import Prompts
+              Import Vault
             </button>
           </div>
         )}

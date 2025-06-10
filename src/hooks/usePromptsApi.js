@@ -156,6 +156,7 @@ export function usePromptsApi(token, onShowToast) {
 
   return {
     prompts,
+    setPrompts,
     loading,
     error,
     fetchPrompts,

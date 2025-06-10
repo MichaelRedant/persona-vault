@@ -28,6 +28,9 @@ function App() {
   const [globalToastMessage, setGlobalToastMessage] = useState('');
   const [isProfileModalOpen, setIsProfileModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [visiblePersonas, setVisiblePersonas] = useState(20);
+  const [visiblePrompts, setVisiblePrompts] = useState(20);
+
 
   const [selectedTab, setSelectedTab] = useState(() => {
     return localStorage.getItem('vault_selectedTab') || 'personas';
@@ -152,11 +155,17 @@ const tagsUsed = allTags.length;
 
       <Header
   personas={personas}
+  setPersonas={setPersonas}  
   prompts={prompts}
+  setPrompts={setPrompts}
   searchTerm={searchTerm}
   setSearchTerm={setSearchTerm}
   username={username}
-  onOpenProfile={() => setIsProfileModalOpen(true)} // NIEUW
+  onOpenProfile={() => setIsProfileModalOpen(true)}
+  createPersona={createPersona} // ✅ toevoegen
+  createPrompt={createPrompt}   // ✅ toevoegen
+  deletePersona={deletePersona}    // ✅ toevoegen
+  deletePrompt={deletePrompt} 
 />
 
 
@@ -256,7 +265,7 @@ const tagsUsed = allTags.length;
           )}
 
           <PersonaDashboard
-            personas={personas}
+            personas={personas.slice(0, visiblePersonas)}
             setPersonas={setPersonas}
             fetchPersonas={fetchPersonas}
             createPersona={createPersona}
@@ -270,6 +279,7 @@ const tagsUsed = allTags.length;
             onShowToast={setGlobalToastMessage}
             onSortChange={setPersonaSortOption}
             compactMode={compactMode}
+            onLoadMore={() => setVisiblePersonas((prev) => prev + 10)}
           />
         </div>
 
@@ -298,7 +308,7 @@ const tagsUsed = allTags.length;
           )}
 
           <PromptDashboard
-            prompts={prompts}
+            prompts={prompts.slice(0, visiblePrompts)}
             setPrompts={setPrompts}
             fetchPrompts={fetchPrompts}
             createPrompt={createPrompt}
@@ -312,6 +322,7 @@ const tagsUsed = allTags.length;
             sortOption={promptSortOption}
             setSortOption={setPromptSortOption}
             compactMode={compactMode}
+            onLoadMore={() => setVisiblePrompts((prev) => prev + 10)}
           />
         </div>
       </div>

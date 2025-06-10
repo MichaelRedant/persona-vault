@@ -157,6 +157,7 @@ export function usePersonasApi(token, onShowToast) {
 
   return {
     personas,
+    setPersonas,
     loading,
     error,
     fetchPersonas,
