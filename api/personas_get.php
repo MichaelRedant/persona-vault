@@ -15,7 +15,7 @@ if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
 }
 
 $jwt = $matches[1];
-$decoded = validate_jwt($jwt); 
+$decoded = validate_jwt($jwt);
 
 if (!$decoded) {
     http_response_code(401);
@@ -31,10 +31,20 @@ if (!$user_id) {
 }
 
 try {
-    $stmt = $pdo->prepare("SELECT * FROM personas WHERE user_id = ? ORDER BY created_at DESC");
+    // Industry fix → collection_id ALTIJD INT of NULL
+   $stmt = $pdo->prepare("
+    SELECT 
+        id, name, description, favorite, tags,
+        collection_id,
+        created_at, updated_at
+    FROM personas
+    WHERE user_id = ?
+    ORDER BY created_at DESC
+");
     $stmt->execute([$user_id]);
     $personas = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    // Geen foreach meer nodig → collection_id komt 100% juist binnen
     echo json_encode(is_array($personas) ? $personas : []);
 } catch (PDOException $e) {
     http_response_code(500);

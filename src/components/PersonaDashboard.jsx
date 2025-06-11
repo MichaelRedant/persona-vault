@@ -15,7 +15,9 @@ export default function PersonaDashboard({
   activeTags,
   showFavoritesOnly,
   sortOption,
-  onShowToast
+  onShowToast,
+  collections,
+  defaultCollectionId = null
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPersona, setEditingPersona] = useState(null);
@@ -76,22 +78,50 @@ export default function PersonaDashboard({
   }, [searchTerm, activeTags, showFavoritesOnly]);
 
   const handleSavePersona = async (persona) => {
-    if (editingPersona) {
-      await updatePersona(persona.id, persona.name, persona.description, persona.tags);
-      onShowToast('Persona updated successfully!');
-    } else {
-      await createPersona(persona.name, persona.description, persona.tags);
-      onShowToast('Persona created successfully!');
-    }
+  // Bepaal collectionId:
+  const collectionId =
+    editingPersona && editingPersona.collectionId !== undefined
+      ? editingPersona.collectionId
+      : defaultCollectionId;
 
-    await fetchPersonas();
-    setIsModalOpen(false);
-    setEditingPersona(null);
-    setIsEditing(false);
-
-    // 🧹 Clear draft always after Save
-    localStorage.removeItem('vault_draft_persona');
+  // Bouw personaToSave object → industry pattern → future-proof
+  const personaToSave = {
+    ...persona,
+    collectionId: collectionId
   };
+
+  if (editingPersona) {
+    await updatePersona(
+      personaToSave.id,
+      personaToSave.name,
+      personaToSave.description,
+      personaToSave.tags,
+      personaToSave.collectionId
+    );
+    onShowToast('Persona updated successfully!');
+  } else {
+    await createPersona(
+      personaToSave.name,
+      personaToSave.description,
+      personaToSave.tags,
+      personaToSave.collectionId
+    );
+    onShowToast('Persona created successfully!');
+  }
+
+  // Refresh dashboard
+  await fetchPersonas();
+
+  // Reset state
+  setIsModalOpen(false);
+  setEditingPersona(null);
+  setIsEditing(false);
+
+  // 🧹 Clear draft always after Save
+  localStorage.removeItem('vault_draft_persona');
+};
+
+
 
   const startEdit = (persona) => {
     setEditingPersona(persona);
@@ -124,19 +154,20 @@ export default function PersonaDashboard({
         </div>
       ) : (
         filteredPersonas.slice(0, visibleCount).map((persona) => (
-          <PersonaCard
-            key={persona.id}
-            persona={persona}
-            onToggleFavorite={toggleFavorite}
-            onDelete={async () => {
-              await deletePersona(persona.id);
-              await fetchPersonas();
-              onShowToast('Persona deleted.');
-            }}
-            onEdit={startEdit}
-            onShowToast={onShowToast}
-          />
-        ))
+  <PersonaCard
+    key={persona.id}
+    persona={persona}
+    collections={collections}
+    onToggleFavorite={toggleFavorite}
+    onDelete={async () => {
+      await deletePersona(persona.id);
+      await fetchPersonas();
+      onShowToast('Persona deleted.');
+    }}
+    onEdit={startEdit}
+    onShowToast={onShowToast}
+  />
+))
       )}
 
       {hasMore && (
@@ -162,10 +193,15 @@ export default function PersonaDashboard({
         setIsEditing(false);
       }}>
         <PersonaForm
-          key={editingPersona ? editingPersona.id : 'new'}
-          onSave={handleSavePersona}
-          initialData={editingPersona}
-        />
+  key={editingPersona ? editingPersona.id : 'new'}
+  onSave={handleSavePersona}
+  initialData={
+    editingPersona
+      ? editingPersona
+      : { collectionId: defaultCollectionId } 
+  }
+  collections={collections}
+/>
       </Modal>
     </div>
   );

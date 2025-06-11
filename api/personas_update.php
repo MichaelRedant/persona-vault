@@ -21,7 +21,6 @@ if (!isset($_SERVER['HTTP_AUTHORIZATION'])) {
     }
 }
 
-
 // Preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -37,7 +36,7 @@ if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
 }
 
 $jwt = $matches[1];
-$decoded = validate_jwt($jwt);  // ✅ correct zo, geen tweede parameter
+$decoded = validate_jwt($jwt);
 
 if (!$decoded) {
     http_response_code(401);
@@ -48,6 +47,7 @@ if (!$decoded) {
 $user_id = $decoded['user_id'] ?? null;
 
 $data = json_decode(file_get_contents('php://input'), true);
+
 $id = $data['id'] ?? 0;
 $name = $data['name'] ?? '';
 $description = $data['description'] ?? '';
@@ -56,8 +56,21 @@ $tags = isset($data['tags']) && is_array($data['tags'])
     ? implode(',', array_map('trim', $data['tags']))
     : '';
 
+// ✅ CollectionId → industry fix → lege string → NULL in DB
+$collection_id = null;
+if (isset($data['collectionId'])) {
+    if (is_numeric($data['collectionId'])) {
+        $collection_id = (int)$data['collectionId'];
+    } elseif ($data['collectionId'] === '' || $data['collectionId'] === null) {
+        $collection_id = null; // expliciet NULL in DB
+    }
+}
+
 // Veilig → user_id toevoegen in WHERE clause
-$stmt = $pdo->prepare("UPDATE personas SET name = ?, description = ?, favorite = ?, tags = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ? AND user_id = ?");
-$stmt->execute([$name, $description, $favorite, $tags, $id, $user_id]);
+$stmt = $pdo->prepare("UPDATE personas 
+    SET name = ?, description = ?, favorite = ?, tags = ?, collection_id = ?, updated_at = CURRENT_TIMESTAMP 
+    WHERE id = ? AND user_id = ?");
+
+$stmt->execute([$name, $description, $favorite, $tags, $collection_id, $id, $user_id]);
 
 echo json_encode(['success' => true]);

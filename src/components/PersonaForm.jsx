@@ -6,11 +6,12 @@ import { useEditor, EditorContent } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
 import EditorToolbar from './EditorToolbar';
 
-export default function PersonaForm({ onSave, initialData }) {
+export default function PersonaForm({ onSave, initialData, collections = [] }) {
   const initialFormState = {
     name: '',
     description: '',
     tagsInput: '',
+    collectionId: null,
   };
 
   const [draft, setDraft, clearDraft] = useDraft('vault_draft_persona', initialFormState);
@@ -26,24 +27,28 @@ export default function PersonaForm({ onSave, initialData }) {
   });
 
   useEffect(() => {
-    if (initialData) {
-      setDraft({
-        name: initialData.name || '',
-        description: initialData.description || '',
-        tagsInput: Array.isArray(initialData.tags)
-          ? initialData.tags.join(', ')
-          : typeof initialData.tags === 'string'
-          ? initialData.tags
-          : '',
-      });
-      if (editor) {
-        editor.commands.setContent(initialData.description || '');
-      }
-      setError(null);
-    } else {
-      setError(null);
+  if (initialData) {
+    setDraft({
+      name: initialData.name || '',
+      description: initialData.description || '',
+      tagsInput: Array.isArray(initialData.tags)
+        ? initialData.tags.join(', ')
+        : typeof initialData.tags === 'string'
+        ? initialData.tags
+        : '',
+      collectionId:
+        typeof initialData.collection_id !== 'undefined'
+          ? initialData.collection_id
+          : null, // ✅ FIX → correct property name
+    });
+    if (editor) {
+      editor.commands.setContent(initialData.description || '');
     }
-  }, [initialData, setDraft, editor]);
+    setError(null);
+  } else {
+    setError(null);
+  }
+}, [initialData, setDraft, editor]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -56,16 +61,18 @@ export default function PersonaForm({ onSave, initialData }) {
     setLoading(true);
     setError(null);
 
-    const personaData = {
-      id: initialData ? initialData.id : undefined,
-      name: draft.name,
-      description: draft.description,
-      favorite: initialData ? initialData.favorite : false,
-      tags: draft.tagsInput
-        .split(',')
-        .map((tag) => tag.trim())
-        .filter((tag) => tag.length > 0),
-    };
+  const personaData = {
+  id: initialData ? initialData.id : undefined,
+  name: draft.name,
+  description: draft.description,
+  favorite: initialData ? initialData.favorite : false,
+  tags: draft.tagsInput
+    .split(',')
+    .map((tag) => tag.trim())
+    .filter((tag) => tag.length > 0),
+  collectionId: draft.collectionId, 
+};
+
 
     try {
       await onSave(personaData);
@@ -111,6 +118,43 @@ export default function PersonaForm({ onSave, initialData }) {
           placeholder="e.g. SEO, Content, Data"
         />
       </div>
+
+      {/* Collection select */}
+<div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+    Collection
+  </label>
+  <select
+    value={draft.collectionId ?? ''}
+    onChange={(e) =>
+      setDraft({
+        ...draft,
+        collectionId: e.target.value === '' ? null : Number(e.target.value),
+      })
+    }
+    className="border border-gray-300 dark:border-gray-600 rounded px-3 py-2 w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
+  >
+    <option value="">-- No Collection --</option>
+    {collections.map((col) => (
+      <option key={col.id} value={col.id}>
+        {col.name}
+      </option>
+    ))}
+  </select>
+</div>
+
+{/* ✅ BUTTON Remove from Collection if applicable */}
+{draft.collectionId !== null && (
+  <Button
+    type="button"
+    variant="outline"
+    onClick={() => setDraft({ ...draft, collectionId: null })}
+    className="mt-2"
+  >
+    Remove from Collection
+  </Button>
+)}
+
 
       <Button type="submit" disabled={loading}>
         {loading

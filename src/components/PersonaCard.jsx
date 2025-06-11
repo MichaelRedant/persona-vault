@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { downloadAsJson } from '../utils/downloadAsJson';
 import TryInPlatformButtons from './TryInPlatformButtons';
 import { AiFillStar, AiOutlineStar } from 'react-icons/ai';
@@ -6,30 +6,45 @@ import { FiEdit2, FiTrash2, FiDownload, FiCopy } from 'react-icons/fi';
 import ConfirmDialog from './ConfirmDialog';
 import Button from './Button';
 
-export default function PersonaCard({ persona, compactMode, onToggleFavorite, onDelete, onEdit, onShowToast }) {
+export default function PersonaCard({
+  persona,
+  collections = [],
+  compactMode,
+  onToggleFavorite,
+  onDelete,
+  onEdit,
+  onShowToast
+}) {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [showCollectionInfo, setShowCollectionInfo] = useState(false);
 
   const handleCopy = (htmlContent) => {
-  // ✅ create temp DOM element to strip tags
-  const tempElement = document.createElement('div');
-  tempElement.innerHTML = htmlContent;
-  const plainText = tempElement.innerText;
+    const tempElement = document.createElement('div');
+    tempElement.innerHTML = htmlContent;
+    const plainText = tempElement.innerText;
 
-  navigator.clipboard.writeText(plainText)
-    .then(() => {
-      onShowToast('Copied full content to clipboard!');
-    })
-    .catch((err) => {
-      console.error('Failed to copy!', err);
-      onShowToast('Failed to copy content.');
-    });
-};
+    navigator.clipboard.writeText(plainText)
+      .then(() => {
+        onShowToast('Copied full content to clipboard!');
+      })
+      .catch((err) => {
+        console.error('Failed to copy!', err);
+        onShowToast('Failed to copy content.');
+      });
+  };
 
   const tagsArray = Array.isArray(persona.tags)
     ? persona.tags
     : typeof persona.tags === 'string'
       ? persona.tags.split(',').map(t => t.trim()).filter(Boolean)
       : [];
+
+  const collectionName = useMemo(() => {
+  if (!persona.collection_id) return 'No Collection';
+  const col = collections?.find(c => Number(c.id) === Number(persona.collection_id));
+  return col ? col.name : 'Unknown Collection';
+}, [persona.collection_id, collections]);
+
 
   return (
     <div className={`bg-gradient-to-tr from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 ${compactMode ? 'p-3 mb-4' : 'p-6 mb-6'} transition-transform transform hover:scale-[1.02] hover:shadow-xl duration-200 ease-in-out`}>
@@ -38,15 +53,13 @@ export default function PersonaCard({ persona, compactMode, onToggleFavorite, on
         {/* Content */}
         <div>
           <h2 className={`font-bold text-gray-900 dark:text-white mb-1 ${compactMode ? 'text-lg' : 'text-xl'}`}>
-  {persona.name}
-</h2>
+            {persona.name}
+          </h2>
 
-<div
-  className={`max-h-[150px] overflow-y-auto mb-2 pr-1 ${compactMode ? 'text-xs' : 'text-sm'} text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none`}
-  dangerouslySetInnerHTML={{ __html: persona.description }}
-/>
-
-
+          <div
+            className={`max-h-[150px] overflow-y-auto mb-2 pr-1 ${compactMode ? 'text-xs' : 'text-sm'} text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none`}
+            dangerouslySetInnerHTML={{ __html: persona.description }}
+          />
 
           {!compactMode && (
             <div className="flex flex-wrap gap-2">
@@ -60,51 +73,68 @@ export default function PersonaCard({ persona, compactMode, onToggleFavorite, on
               ))}
             </div>
           )}
+
+          {/* Collection badge */}
+          {persona.collection_id && (
+  <div className="mt-2 text-right">
+    <button
+      onClick={() => setShowCollectionInfo(!showCollectionInfo)}
+      className="text-xs text-blue-600 dark:text-blue-400 underline hover:no-underline"
+    >
+      📁 Collection:
+    </button>
+    {showCollectionInfo && (
+      <div className="text-sm text-gray-500 mt-2 text-center">
+        This Persona belongs to <strong>{collectionName}</strong>.
+      </div>
+    )}
+  </div>
+)}
+
         </div>
 
         {/* Actions */}
         <div className="flex flex-wrap gap-2 justify-center mt-4">
-  <Button
-    onClick={() => onToggleFavorite(persona.id, persona.favorite)}
-    variant="success"
-    icon={persona.favorite ? <AiFillStar /> : <AiOutlineStar />}
-    className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-    title="Favorite"
-  />
+          <Button
+            onClick={() => onToggleFavorite(persona.id, persona.favorite)}
+            variant="success"
+            icon={persona.favorite ? <AiFillStar /> : <AiOutlineStar />}
+            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+            title="Favorite"
+          />
 
-  <Button
-    onClick={() => handleCopy(persona.description)}
-    variant="secondary"
-    icon={<FiCopy />}
-    className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-    title="Copy to Clipboard"
-  />
+          <Button
+            onClick={() => handleCopy(persona.description)}
+            variant="secondary"
+            icon={<FiCopy />}
+            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+            title="Copy to Clipboard"
+          />
 
-  <Button
-    onClick={() => onEdit(persona)}
-    variant="primary"
-    icon={<FiEdit2 />}
-    className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-    title="Edit"
-  />
+          <Button
+            onClick={() => onEdit(persona)}
+            variant="primary"
+            icon={<FiEdit2 />}
+            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+            title="Edit"
+          />
 
-  <Button
-    onClick={() => setConfirmOpen(true)}
-    variant="danger"
-    icon={<FiTrash2 />}
-    className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-    title="Delete"
-  />
+          <Button
+            onClick={() => setConfirmOpen(true)}
+            variant="danger"
+            icon={<FiTrash2 />}
+            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+            title="Delete"
+          />
 
-  <Button
-    onClick={() => downloadAsJson(persona, persona.name || 'persona')}
-    variant="primary"
-    icon={<FiDownload />}
-    className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-    title="Export"
-  />
-</div>
-
+          <Button
+            onClick={() => downloadAsJson(persona, persona.name || 'persona')}
+            variant="primary"
+            icon={<FiDownload />}
+            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+            title="Export"
+          />
+        </div>
       </div>
 
       {/* Try in Platform → under card */}

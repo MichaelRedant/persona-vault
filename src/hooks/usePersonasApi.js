@@ -11,14 +11,18 @@ export function usePersonasApi(token, onShowToast) {
   const handleError = useApiErrorHandler(onShowToast);
 
   const parsePersonas = (data) =>
-    data.map((p) => ({
-      ...p,
-      favorite: p.favorite === 1 || p.favorite === '1' ? 1 : 0,
-      tags:
-        typeof p.tags === 'string'
-          ? p.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0)
-          : [],
-    }));
+  data.map((p) => ({
+    ...p,
+    favorite: p.favorite === 1 || p.favorite === '1' ? 1 : 0,
+    collection_id:
+      p.collection_id !== undefined && p.collection_id !== null && p.collection_id !== ''
+        ? Number(p.collection_id)
+        : null,
+    tags:
+      typeof p.tags === 'string'
+        ? p.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0)
+        : [],
+  }));
 
   const fetchPersonas = useCallback(async () => {
     setLoading(true);
@@ -49,78 +53,89 @@ export function usePersonasApi(token, onShowToast) {
     }
   }, [handleError, token]);
 
-  const createPersona = async (name, description, tags = []) => {
-    try {
-      const response = await fetch(`${BASE_URL}/personas_create.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name, description, tags }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        await fetchPersonas();
-      } else {
-        handleError(new Error('API returned failure'), 'Failed to create persona');
-      }
-    } catch (err) {
-      console.error('Failed to create persona:', err);
-      setError(err);
-      handleError(err, 'Failed to create persona');
+  const createPersona = async (name, description, tags = [], collectionId = null) => {
+  try {
+    const response = await fetch(`${BASE_URL}/personas_create.php`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ name, description, tags, collectionId }), // ✅ collectionId meegeven
+    });
+    const data = await response.json();
+    if (data.success) {
+      await fetchPersonas();
+    } else {
+      handleError(new Error('API returned failure'), 'Failed to create persona');
     }
-  };
+  } catch (err) {
+    console.error('Failed to create persona:', err);
+    setError(err);
+    handleError(err, 'Failed to create persona');
+  }
+};
 
-  const updatePersona = async (id, name, description, tags = []) => {
-    try {
-      const response = await fetch(`${BASE_URL}/personas_update.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ id, name, description, tags }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        await fetchPersonas();
-      } else {
-        handleError(new Error('API returned failure'), 'Failed to update persona');
-      }
-    } catch (err) {
-      console.error('Failed to update persona:', err);
-      setError(err);
-      handleError(err, 'Failed to update persona');
+
+  const updatePersona = async (id, name, description, tags = [], collectionId = null) => {
+  try {
+    const response = await fetch(`${BASE_URL}/personas_update.php`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ id, name, description, tags, collectionId }), // ✅ collectionId meegeven
+    });
+    const data = await response.json();
+    if (data.success) {
+      await fetchPersonas();
+    } else {
+      handleError(new Error('API returned failure'), 'Failed to update persona');
     }
-  };
+  } catch (err) {
+    console.error('Failed to update persona:', err);
+    setError(err);
+    handleError(err, 'Failed to update persona');
+  }
+};
+
 
   const updatePersonaFavorite = async (id, favorite) => {
-    try {
-      const response = await fetch(`${BASE_URL}/personas_update_favorite.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ id, favorite }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setPersonas((prev) =>
-          prev.map((p) =>
-            p.id === id ? { ...p, favorite } : p
-          )
-        );
-      } else {
-        handleError(new Error('API returned failure'), 'Failed to update favorite');
-      }
-    } catch (err) {
-      console.error('Failed to update persona favorite:', err);
-      setError(err);
-      handleError(err, 'Failed to update favorite');
+  try {
+    const response = await fetch(`${BASE_URL}/personas_update_favorite.php`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ id, favorite }),
+    });
+    const data = await response.json();
+    if (data.success) {
+      setPersonas((prev) =>
+        prev.map((p) =>
+          p.id === id
+            ? {
+                ...p,
+                favorite,
+                collection_id:
+                  p.collection_id === null || p.collection_id === undefined
+                    ? null
+                    : Number(p.collection_id), // industry correct → behouden
+              }
+            : p
+        )
+      );
+    } else {
+      handleError(new Error('API returned failure'), 'Failed to update favorite');
     }
-  };
+  } catch (err) {
+    console.error('Failed to update persona favorite:', err);
+    setError(err);
+    handleError(err, 'Failed to update favorite');
+  }
+};
 
   const deletePersona = async (id) => {
     try {

@@ -2,7 +2,6 @@
 header('Content-Type: application/json');
 include 'cors.php';
 include 'db.php';
-
 include 'jwt_utils.php';
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -18,7 +17,7 @@ if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
 }
 
 $jwt = $matches[1];
-$decoded = validate_jwt($jwt); 
+$decoded = validate_jwt($jwt);
 
 if (!$decoded) {
     http_response_code(401);
@@ -41,7 +40,11 @@ $tags = isset($data['tags']) && is_array($data['tags'])
     ? implode(',', array_map('trim', $data['tags']))
     : '';
 
-$stmt = $pdo->prepare("INSERT INTO personas (user_id, name, description, tags) VALUES (?, ?, ?, ?)");
-$stmt->execute([$user_id, $name, $description, $tags]);
+// ✅ CollectionId → optioneel
+$collection_id = isset($data['collectionId']) && is_numeric($data['collectionId']) ? (int)$data['collectionId'] : null;
+
+// Prepare INSERT statement → met collection_id
+$stmt = $pdo->prepare("INSERT INTO personas (user_id, name, description, tags, collection_id) VALUES (?, ?, ?, ?, ?)");
+$stmt->execute([$user_id, $name, $description, $tags, $collection_id]);
 
 echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
