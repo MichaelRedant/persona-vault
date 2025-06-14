@@ -16,7 +16,6 @@ export default function PersonaCard({
   onShowToast
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
-  const [showCollectionInfo, setShowCollectionInfo] = useState(false);
 
   const handleCopy = (htmlContent) => {
     const tempElement = document.createElement('div');
@@ -39,19 +38,21 @@ export default function PersonaCard({
       ? persona.tags.split(',').map(t => t.trim()).filter(Boolean)
       : [];
 
-  const collectionName = useMemo(() => {
-  if (!persona.collection_id) return 'No Collection';
-  const col = collections?.find(c => Number(c.id) === Number(persona.collection_id));
-  return col ? col.name : 'Unknown Collection';
-}, [persona.collection_id, collections]);
-
+  const collectionNames = useMemo(() => {
+    if (!Array.isArray(persona.collection_ids) || persona.collection_ids.length === 0) return [];
+    return persona.collection_ids
+      .map((cid) => {
+        const match = collections.find((col) => Number(col.id) === Number(cid));
+        return match ? match.name : null;
+      })
+      .filter(Boolean);
+  }, [persona.collection_ids, collections]);
 
   return (
     <div className={`bg-gradient-to-tr from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 ${compactMode ? 'p-3 mb-4' : 'p-6 mb-6'} transition-transform transform hover:scale-[1.02] hover:shadow-xl duration-200 ease-in-out`}>
-
       <div className="flex justify-between items-start flex-wrap gap-4">
         {/* Content */}
-        <div>
+        <div className="flex-grow min-w-0">
           <h2 className={`font-bold text-gray-900 dark:text-white mb-1 ${compactMode ? 'text-lg' : 'text-xl'}`}>
             {persona.name}
           </h2>
@@ -61,8 +62,8 @@ export default function PersonaCard({
             dangerouslySetInnerHTML={{ __html: persona.description }}
           />
 
-          {!compactMode && (
-            <div className="flex flex-wrap gap-2">
+          {!compactMode && tagsArray.length > 0 && (
+            <div className="flex flex-wrap gap-2 mt-1">
               {tagsArray.map(tag => (
                 <span
                   key={tag}
@@ -74,23 +75,20 @@ export default function PersonaCard({
             </div>
           )}
 
-          {/* Collection badge */}
-          {persona.collection_id && (
-  <div className="mt-2 text-right">
-    <button
-      onClick={() => setShowCollectionInfo(!showCollectionInfo)}
-      className="text-xs text-blue-600 dark:text-blue-400 underline hover:no-underline"
-    >
-      📁 Collection:
-    </button>
-    {showCollectionInfo && (
-      <div className="text-sm text-gray-500 mt-2 text-center">
-        This Persona belongs to <strong>{collectionName}</strong>.
-      </div>
-    )}
-  </div>
-)}
-
+          {/* ✅ Collection badges */}
+          {collectionNames.length > 0 && (
+            <div className={`flex flex-wrap gap-2 mt-2 ${compactMode ? 'text-xs' : 'text-sm'}`}>
+              {collectionNames.map((name, index) => (
+                <span
+                  key={index}
+                  title={`Collection: ${name}`}
+                  className="font-medium rounded-full px-2.5 py-0.5 text-xs bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200 truncate max-w-[160px]"
+                >
+                  📁 {name}
+                </span>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Actions */}

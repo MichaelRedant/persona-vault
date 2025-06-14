@@ -9,6 +9,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit;
 }
 
+// ✅ Authorization header
 $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
     http_response_code(401);
@@ -32,19 +33,50 @@ if (!$user_id) {
     exit;
 }
 
-$data = json_decode(file_get_contents('php://input'), true);
+$raw = file_get_contents('php://input');
+error_log("📥 Incoming JSON: $raw");
 
-$name = $data['name'] ?? '';
-$description = $data['description'] ?? '';
+$data = json_decode($raw, true);
+if (!is_array($data)) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Invalid JSON input']);
+    exit;
+}
+
+$name = trim($data['name'] ?? '');
+$description = trim($data['description'] ?? '');
 $tags = isset($data['tags']) && is_array($data['tags'])
     ? implode(',', array_map('trim', $data['tags']))
     : '';
 
-// ✅ CollectionId → optioneel
-$collection_id = isset($data['collectionId']) && is_numeric($data['collectionId']) ? (int)$data['collectionId'] : null;
+// ✅ Collection IDs — veilig filteren
+$collection_ids = isset($data['collection_ids']) && is_array($data['collection_ids'])
+    ? array_filter(array_map('intval', $data['collection_ids']), fn($id) => $id > 0)
+    : [];
 
-// Prepare INSERT statement → met collection_id
-$stmt = $pdo->prepare("INSERT INTO personas (user_id, name, description, tags, collection_id) VALUES (?, ?, ?, ?, ?)");
-$stmt->execute([$user_id, $name, $description, $tags, $collection_id]);
+if ($name === '' || $description === '') {
+    http_response_code(400);
+    echo json_encode(['error' => 'Name and description are required']);
+    exit;
+}
 
-echo json_encode(['success' => true, 'id' => $pdo->lastInsertId()]);
+try {
+    // 🔹 1. Persona toevoegen
+    $stmt = $pdo->prepare("INSERT INTO personas (user_id, name, description, tags) VALUES (?, ?, ?, ?)");
+    $stmt->execute([$user_id, $name, $description, $tags]);
+    $persona_id = $pdo->lastInsertId();
+
+    // 🔹 2. Collectie-relaties aanmaken
+    if (!empty($collection_ids)) {
+        $stmtAssoc = $pdo->prepare("INSERT INTO persona_collections (persona_id, collection_id, user_id) VALUES (?, ?, ?)");
+foreach ($collection_ids as $cid) {
+    $stmtAssoc->execute([$persona_id, $cid, $user_id]);
+}
+    }
+
+    echo json_encode(['success' => true, 'id' => $persona_id]);
+} catch (PDOException $e) {
+    error_log("❌ DB Error: " . $e->getMessage());
+    http_response_code(500);
+    echo json_encode(['error' => 'Database error', 'details' => $e->getMessage()]);
+}

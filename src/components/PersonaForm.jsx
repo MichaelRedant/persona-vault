@@ -11,7 +11,7 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
     name: '',
     description: '',
     tagsInput: '',
-    collectionId: null,
+    collectionIds: [],
   };
 
   const [draft, setDraft, clearDraft] = useDraft('vault_draft_persona', initialFormState);
@@ -24,31 +24,37 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
     onUpdate: ({ editor }) => {
       setDraft({ ...draft, description: editor.getHTML() });
     },
+    editorProps: {
+      attributes: {
+        placeholder: 'Beschrijf deze persona hier...',
+        class: 'min-h-[300px] max-h-[500px] overflow-y-auto prose dark:prose-invert prose-sm px-3 py-2 focus:outline-none'
+      }
+    }
   });
 
   useEffect(() => {
-  if (initialData) {
-    setDraft({
-      name: initialData.name || '',
-      description: initialData.description || '',
-      tagsInput: Array.isArray(initialData.tags)
-        ? initialData.tags.join(', ')
-        : typeof initialData.tags === 'string'
-        ? initialData.tags
-        : '',
-      collectionId:
-        typeof initialData.collection_id !== 'undefined'
-          ? initialData.collection_id
-          : null, // ✅ FIX → correct property name
-    });
-    if (editor) {
-      editor.commands.setContent(initialData.description || '');
+    if (initialData) {
+      setDraft({
+        name: initialData.name || '',
+        description: initialData.description || '',
+        tagsInput: Array.isArray(initialData.tags)
+          ? initialData.tags.join(', ')
+          : typeof initialData.tags === 'string'
+          ? initialData.tags
+          : '',
+        collectionIds: Array.isArray(initialData.collectionIds)
+          ? initialData.collectionIds
+          : [],
+      });
+
+      if (editor) {
+        editor.commands.setContent(initialData.description || '');
+      }
+    } else {
+      setDraft(initialFormState);
     }
-    setError(null);
-  } else {
-    setError(null);
-  }
-}, [initialData, setDraft, editor]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialData, setDraft, editor]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -61,18 +67,17 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
     setLoading(true);
     setError(null);
 
-  const personaData = {
-  id: initialData ? initialData.id : undefined,
-  name: draft.name,
-  description: draft.description,
-  favorite: initialData ? initialData.favorite : false,
-  tags: draft.tagsInput
-    .split(',')
-    .map((tag) => tag.trim())
-    .filter((tag) => tag.length > 0),
-  collectionId: draft.collectionId, 
-};
-
+    const personaData = {
+      id: initialData ? initialData.id : undefined,
+      name: draft.name,
+      description: draft.description,
+      favorite: initialData ? initialData.favorite : false,
+      tags: draft.tagsInput
+        .split(',')
+        .map(tag => tag.trim())
+        .filter((tag, i, arr) => tag && arr.indexOf(tag) === i), // unieke tags
+      collectionIds: draft.collectionIds,
+    };
 
     try {
       await onSave(personaData);
@@ -85,13 +90,20 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
     }
   };
 
+  const toggleCollection = (id) => {
+    setDraft((prev) => {
+      const updated = prev.collectionIds.includes(id)
+        ? prev.collectionIds.filter((cid) => cid !== id)
+        : [...prev.collectionIds, id];
+      return { ...prev, collectionIds: updated };
+    });
+  };
+
   return (
     <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
-
       {error && <div className="text-red-500 text-sm font-medium">{error}</div>}
 
-      <div className="max-h-[70vh] overflow-y-auto px-1">
-
+      <div className="max-h-[70vh] overflow-y-auto px-1 space-y-4">
         <Input
           label="Persona Name"
           value={draft.name}
@@ -103,11 +115,9 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
           <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
             Persona Description
           </label>
-
           <EditorToolbar editor={editor} />
-
-          <div className="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white min-h-[300px] max-h-[500px] overflow-y-auto">
-            <EditorContent editor={editor} className="tiptap-editor" />
+          <div className="border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-white">
+            <EditorContent editor={editor} />
           </div>
         </div>
 
@@ -117,44 +127,47 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
           onChange={(e) => setDraft({ ...draft, tagsInput: e.target.value })}
           placeholder="e.g. SEO, Content, Data"
         />
+
+        {/* 🧩 Collection Selector */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+            Collections
+          </label>
+
+          {collections.length === 0 ? (
+            <p className="text-sm text-gray-500 dark:text-gray-400 italic">
+              No collections available.
+            </p>
+          ) : (
+            <>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
+                Geselecteerd: {draft.collectionIds.length}
+              </p>
+
+              <div className="border rounded-md p-2 max-h-60 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
+                {collections.map((c) => {
+                  const isSelected = draft.collectionIds.includes(Number(c.id));
+                  return (
+                    <button
+                      type="button"
+                      key={c.id}
+                      onClick={() => toggleCollection(Number(c.id))}
+                      title={c.name}
+                      className={`px-3 py-2 rounded-md border text-sm font-medium text-left truncate
+                        ${isSelected
+                          ? 'bg-blue-600 text-white border-blue-700'
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white border-gray-300 dark:border-gray-600'}
+                      `}
+                    >
+                      {c.name}
+                    </button>
+                  );
+                })}
+              </div>
+            </>
+          )}
+        </div>
       </div>
-
-      {/* Collection select */}
-<div>
-  <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
-    Collection
-  </label>
-  <select
-    value={draft.collectionId ?? ''}
-    onChange={(e) =>
-      setDraft({
-        ...draft,
-        collectionId: e.target.value === '' ? null : Number(e.target.value),
-      })
-    }
-    className="border border-gray-300 dark:border-gray-600 rounded px-3 py-2 w-full bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
-  >
-    <option value="">-- No Collection --</option>
-    {collections.map((col) => (
-      <option key={col.id} value={col.id}>
-        {col.name}
-      </option>
-    ))}
-  </select>
-</div>
-
-{/* ✅ BUTTON Remove from Collection if applicable */}
-{draft.collectionId !== null && (
-  <Button
-    type="button"
-    variant="outline"
-    onClick={() => setDraft({ ...draft, collectionId: null })}
-    className="mt-2"
-  >
-    Remove from Collection
-  </Button>
-)}
-
 
       <Button type="submit" disabled={loading}>
         {loading
@@ -165,7 +178,6 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
           ? 'Update Persona'
           : 'Save Persona'}
       </Button>
-
     </form>
   );
 }

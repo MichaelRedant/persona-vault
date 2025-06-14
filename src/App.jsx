@@ -24,12 +24,12 @@ import CollectionDashboard from './pages/CollectionDashboard';
 import CollectionPage from './pages/CollectionPage';
 import Modal from './components/Modal';
 import PersonaForm from './components/PersonaForm';
-
 import './index.css';
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
   const [activeTags, setActiveTags] = useState([]);
+  const [collectionSortOption, setCollectionSortOption] = useState('alphabetical');
   const [showFavoritesOnly, setShowFavoritesOnly] = useState(false);
   const [personaSortOption, setPersonaSortOption] = useState('newest');
   const [promptSortOption, setPromptSortOption] = useState('newest');
@@ -40,6 +40,8 @@ function App() {
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [activeCollectionId, setActiveCollectionId] = useState(() => {
   const storedId = localStorage.getItem('vault_activeCollectionId');
+
+
   return storedId ? Number(storedId) : null;
 });
   const [defaultCollectionIdForNewPersona, setDefaultCollectionIdForNewPersona] = useState(null); // → wordt meegegeven aan PersonaDashboard → defaultCollectionId prop
@@ -82,7 +84,8 @@ useEffect(() => {
     createPersona,
     updatePersona,
     deletePersona,
-    updatePersonaFavorite
+    updatePersonaFavorite,
+    removePersonaFromCollection,
   } = usePersonasApi(token, setGlobalToastMessage);
 
   const {
@@ -126,7 +129,11 @@ useEffect(() => {
 
 
 
-      fetchPersonas();
+      fetchPersonas().then(() => {
+      setTimeout(() => {
+        console.log('📦 personas after fetch →', personas);
+      }, 500); // even kleine delay om zeker te zijn dat state is geüpdatet
+    });
       fetchPrompts();
       fetchCollections();
     } else {
@@ -137,6 +144,13 @@ useEffect(() => {
 
   const personaCount = personas.length;
   const promptCount = prompts.length;
+  const collectionsWithCounts = collections.map((col) => ({
+  ...col,
+  personaCount: personas.filter((p) =>
+  Array.isArray(p.collection_ids) &&
+  p.collection_ids.map(Number).includes(Number(col.id))
+).length,
+}));
   useEffect(() => {
   const displayUsername = username ? `${username}'s Vault` : 'Persona Vault';
   document.title = `${displayUsername} (${personaCount} Personas | ${promptCount} Prompts)`;
@@ -350,7 +364,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
   <CollectionPage
   collectionId={activeCollectionId}
   personas={personas}
-   collections={collections}
+  collections={collections}
   loadingPersonas={loadingPersonas}
   onBack={() => setSelectedTab('collections')}
   onAddPersonaToCollection={(collectionId) => {
@@ -359,36 +373,32 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
     console.log('Open PersonaForm with defaultCollectionId:', collectionId);
   }}
   onAssignPersonasToCollection={async (personaIds, collectionId) => {
-    for (const id of personaIds) {
-      const persona = personas.find((p) => p.id === id);
-      if (persona) {
-        await updatePersona(
-          id,
-          persona.name,
-          persona.description,
-          persona.tags,
-          collectionId
-        );
-      }
-    }
-
-    await fetchPersonas();
-    setGlobalToastMessage('Personas assigned to collection!');
-  }}
-  onRemovePersonaFromCollection={async (personaId) => {
-    const persona = personas.find((p) => p.id === personaId);
+  for (const id of personaIds) {
+    const persona = personas.find(p => p.id === id);
     if (persona) {
       await updatePersona(
-        personaId,
+        id,
         persona.name,
         persona.description,
         persona.tags,
-        null // ✅ REMOVE FROM COLLECTION
+        [...(persona.collection_ids || []), collectionId]
       );
-      await fetchPersonas();
-      setGlobalToastMessage('Persona removed from collection!');
     }
-  }}
+  }
+  await fetchPersonas();
+  setGlobalToastMessage('Personas assigned to collection!');
+}}
+  onRemovePersonaFromCollection={async (personaId, collectionId) => {
+  try {
+    await removePersonaFromCollection(personaId, collectionId);
+    await fetchPersonas();
+    setGlobalToastMessage('Persona removed from collection!');
+  } catch (err) {
+    console.error('Failed to remove persona from collection:', err);
+    setGlobalToastMessage('Error removing from collection');
+  }
+}}
+
   onShowToast={setGlobalToastMessage}
   onToggleFavorite={async (personaId, favorite) => {
     await updatePersonaFavorite(personaId, favorite ? 0 : 1);
@@ -403,10 +413,20 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
     }
   }}
   onStartEditPersona={(persona) => {
-    setEditingPersona(persona); // ✅ set editing persona state
-    setIsPersonaModalOpen(true); // ✅ open modal
-    setGlobalToastMessage(`Editing persona "${persona.name}"...`);
-  }}
+  const fullPersona = personas.find(p => p.id === persona.id); // volledige data met collection_ids
+  console.log('✏️ EDITING PERSONA:', fullPersona); // debug
+
+  if (!fullPersona) {
+    setGlobalToastMessage('Persona data not found');
+    return;
+  }
+
+  setEditingPersona(fullPersona);
+  setIsPersonaModalOpen(true);
+  setGlobalToastMessage(`Editing persona "${fullPersona.name}"...`);
+}}
+
+
 />
 
 
@@ -501,23 +521,31 @@ setEditingPersona={setEditingPersona}
     {/* Collections Dashboard */}
     <div className={`${selectedTab === 'collections' ? 'block' : 'hidden'}`}>
       <CollectionDashboard
-        collections={collections}
-        setCollections={setCollections}
-        loading={loadingCollections}
-        error={errorCollections}
-        onOpenCollection={(collectionId) => {
-          setActiveCollectionId(collectionId);
-          setSelectedTab('collectionDetail');
-        }}
-        onAddCollection={(name) => {
-          createCollection(name);
-        }}
-        onDeleteCollection={(collectionId) => {
-          if (window.confirm('Are you sure you want to delete this collection?')) {
-            deleteCollection(collectionId);
-          }
-        }}
-      />
+  collections={collectionsWithCounts}
+  setCollections={setCollections}
+  loading={loadingCollections}
+  error={errorCollections}
+  sortOption={collectionSortOption}
+  onSortChange={setCollectionSortOption}
+  onOpenCollection={(collectionId) => {
+    setActiveCollectionId(collectionId);
+    setSelectedTab('collectionDetail');
+  }}
+  onAddCollection={(name) => {
+    createCollection(name);
+  }}
+  onRenameCollection={(id, newName) => {
+    const updated = collections.map((c) =>
+      c.id === id ? { ...c, name: newName } : c
+    );
+    setCollections(updated);
+    setGlobalToastMessage(`Collectie hernoemd naar "${newName}"`);
+  }}
+  onDeleteCollection={(id) => {
+    deleteCollection(id);
+    setGlobalToastMessage('Collectie verwijderd!');
+  }}
+/>
     </div>
   </div>
 )}
@@ -587,11 +615,12 @@ setEditingPersona={setEditingPersona}
         if (editingPersona.id) {
           // Update flow
           await updatePersona(
+            
             personaData.id,
             personaData.name,
             personaData.description,
             personaData.tags,
-            personaData.collectionId
+            personaData.collectionIds
           );
           setGlobalToastMessage('Persona updated successfully!');
         } else {
@@ -600,7 +629,7 @@ setEditingPersona={setEditingPersona}
             personaData.name,
             personaData.description,
             personaData.tags,
-            personaData.collectionId
+            personaData.collectionIds
           );
           setGlobalToastMessage('Persona created successfully!');
         }
@@ -611,6 +640,7 @@ setEditingPersona={setEditingPersona}
       }}
       initialData={editingPersona}
       collections={collections}
+      
     />
   </Modal>
 )}

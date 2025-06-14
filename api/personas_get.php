@@ -1,12 +1,10 @@
 <?php
-error_log('Authorization header: ' . ($_SERVER['HTTP_AUTHORIZATION'] ?? 'NOT SET'));
-
 header('Content-Type: application/json');
 include 'cors.php';
 include 'db.php';
-
 require_once 'jwt_utils.php';
 
+// ✅ Auth header check
 $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
     http_response_code(401);
@@ -31,21 +29,51 @@ if (!$user_id) {
 }
 
 try {
-    // Industry fix → collection_id ALTIJD INT of NULL
-   $stmt = $pdo->prepare("
-    SELECT 
-        id, name, description, favorite, tags,
-        collection_id,
-        created_at, updated_at
-    FROM personas
-    WHERE user_id = ?
-    ORDER BY created_at DESC
-");
+    // ✅ Gebruik LEFT JOIN om persona's zonder collecties ook te tonen
+    $stmt = $pdo->prepare("
+        SELECT 
+            p.id, p.name, p.description, p.favorite, p.tags,
+            p.created_at, p.updated_at,
+            pc.collection_id
+        FROM personas p
+        LEFT JOIN persona_collections pc ON p.id = pc.persona_id
+        WHERE p.user_id = ?
+        ORDER BY p.created_at DESC
+    ");
     $stmt->execute([$user_id]);
-    $personas = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-    // Geen foreach meer nodig → collection_id komt 100% juist binnen
-    echo json_encode(is_array($personas) ? $personas : []);
+    // ✅ Groepeer per persona met alle bijhorende collection_ids[]
+    $personasMap = [];
+
+    foreach ($rows as $row) {
+        $id = $row['id'];
+
+        if (!isset($personasMap[$id])) {
+            $personasMap[$id] = [
+                'id' => $id,
+                'name' => $row['name'],
+                'description' => $row['description'],
+                'favorite' => (int)$row['favorite'],
+                'tags' => $row['tags'] ? array_map('trim', explode(',', $row['tags'])) : [],
+                'collection_names' => [],
+                'created_at' => $row['created_at'],
+                'updated_at' => $row['updated_at'],
+                'collection_ids' => [],
+            ];
+        }
+
+        if (!is_null($row['collection_id'])) {
+    $personasMap[$id]['collection_ids'][] = (int)$row['collection_id'];
+    $personasMap[$id]['collection_ids'] = array_unique($personasMap[$id]['collection_ids']);
+}
+
+    }
+
+    // ✅ Converteer map naar array en geef terug als JSON
+    $personas = array_values($personasMap);
+    echo json_encode($personas);
+
 } catch (PDOException $e) {
     http_response_code(500);
     echo json_encode(['error' => 'Failed to fetch personas: ' . $e->getMessage()]);

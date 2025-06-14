@@ -57,20 +57,53 @@ $tags = isset($data['tags']) && is_array($data['tags'])
     : '';
 
 // ✅ CollectionId → industry fix → lege string → NULL in DB
-$collection_id = null;
-if (isset($data['collectionId'])) {
-    if (is_numeric($data['collectionId'])) {
-        $collection_id = (int)$data['collectionId'];
-    } elseif ($data['collectionId'] === '' || $data['collectionId'] === null) {
-        $collection_id = null; // expliciet NULL in DB
-    }
+$collectionIds = [];
+
+if (isset($data['collectionIds']) && is_array($data['collectionIds'])) {
+    $collectionIds = array_filter(array_map('intval', $data['collectionIds']));
 }
 
-// Veilig → user_id toevoegen in WHERE clause
+
+// Update persona data (zonder collection_id!)
 $stmt = $pdo->prepare("UPDATE personas 
-    SET name = ?, description = ?, favorite = ?, tags = ?, collection_id = ?, updated_at = CURRENT_TIMESTAMP 
+    SET name = ?, description = ?, favorite = ?, tags = ?, updated_at = CURRENT_TIMESTAMP 
     WHERE id = ? AND user_id = ?");
+$stmt->execute([$name, $description, $favorite, $tags, $id, $user_id]);
 
-$stmt->execute([$name, $description, $favorite, $tags, $collection_id, $id, $user_id]);
+// 🔒 Check eigendom van persona
+$checkStmt = $pdo->prepare("SELECT id FROM personas WHERE id = ? AND user_id = ?");
+$checkStmt->execute([$id, $user_id]);
+if ($checkStmt->rowCount() === 0) {
+    http_response_code(403);
+    echo json_encode(['error' => 'Unauthorized']);
+    exit;
+}
 
+// 🧩 Sync persona_collections
+try {
+    $pdo->beginTransaction();
+
+    // Alles wissen
+    $deleteStmt = $pdo->prepare("DELETE FROM persona_collections WHERE persona_id = ?");
+    $deleteStmt->execute([$id]);
+
+    // Opnieuw toevoegen
+    if (!empty($collectionIds)) {
+        $insertStmt = $pdo->prepare("INSERT INTO persona_collections (persona_id, collection_id, user_id) VALUES (?, ?, ?)");
+foreach ($collectionIds as $colId) {
+    $insertStmt->execute([$id, $colId, $user_id]);
+}
+
+    }
+
+    $pdo->commit();
+} catch (PDOException $e) {
+    $pdo->rollBack();
+    http_response_code(500);
+    echo json_encode(['error' => 'Failed to update collections: ' . $e->getMessage()]);
+    exit;
+}
+
+// ✅ Success response pas NA commit
 echo json_encode(['success' => true]);
+

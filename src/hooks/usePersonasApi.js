@@ -14,14 +14,10 @@ export function usePersonasApi(token, onShowToast) {
   data.map((p) => ({
     ...p,
     favorite: p.favorite === 1 || p.favorite === '1' ? 1 : 0,
-    collection_id:
-      p.collection_id !== undefined && p.collection_id !== null && p.collection_id !== ''
-        ? Number(p.collection_id)
-        : null,
-    tags:
-      typeof p.tags === 'string'
-        ? p.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0)
-        : [],
+    collectionIds:
+  Array.isArray(p.collection_ids) ? p.collection_ids.map(Number)
+  : Array.isArray(p.collectionIds) ? p.collectionIds.map(Number)
+  : [],
   }));
 
   const fetchPersonas = useCallback(async () => {
@@ -37,12 +33,11 @@ export function usePersonasApi(token, onShowToast) {
       const data = await response.json();
 
       if (Array.isArray(data)) {
-        setPersonas(parsePersonas(data));
-      } else {
-        console.error('Expected array for personas, got:', data);
-        setPersonas([]);
-        handleError(new Error('Invalid API response'), 'Failed to fetch personas');
-      }
+  setPersonas(parsePersonas(data));
+} else {
+  setPersonas([]);
+  handleError(new Error('Invalid API response'), 'Failed to fetch personas');
+}
     } catch (err) {
       console.error('Failed to fetch personas:', err);
       setError(err);
@@ -53,7 +48,7 @@ export function usePersonasApi(token, onShowToast) {
     }
   }, [handleError, token]);
 
-  const createPersona = async (name, description, tags = [], collectionId = null) => {
+  const createPersona = async (name, description, tags = [], collectionIds = []) => {
   try {
     const response = await fetch(`${BASE_URL}/personas_create.php`, {
       method: 'POST',
@@ -61,8 +56,9 @@ export function usePersonasApi(token, onShowToast) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ name, description, tags, collectionId }), // ✅ collectionId meegeven
+      body: JSON.stringify({ name, description, tags, collection_ids: collectionIds })
     });
+
     const data = await response.json();
     if (data.success) {
       await fetchPersonas();
@@ -77,7 +73,9 @@ export function usePersonasApi(token, onShowToast) {
 };
 
 
-  const updatePersona = async (id, name, description, tags = [], collectionId = null) => {
+
+
+  const updatePersona = async (id, name, description, tags = [], collectionIds = []) => {
   try {
     const response = await fetch(`${BASE_URL}/personas_update.php`, {
       method: 'POST',
@@ -85,7 +83,7 @@ export function usePersonasApi(token, onShowToast) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ id, name, description, tags, collectionId }), // ✅ collectionId meegeven
+      body: JSON.stringify({ id, name, description, tags, collectionIds }), // ✅ array
     });
     const data = await response.json();
     if (data.success) {
@@ -99,6 +97,7 @@ export function usePersonasApi(token, onShowToast) {
     handleError(err, 'Failed to update persona');
   }
 };
+
 
 
   const updatePersonaFavorite = async (id, favorite) => {
@@ -136,6 +135,30 @@ export function usePersonasApi(token, onShowToast) {
     handleError(err, 'Failed to update favorite');
   }
 };
+
+const removePersonaFromCollection = async (personaId, collectionId) => {
+  try {
+    const response = await fetch(`${BASE_URL}/persona_remove_from_collection.php`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ personaId, collectionId }),
+    });
+    const data = await response.json();
+    if (data.success) {
+      await fetchPersonas();
+    } else {
+      handleError(new Error('API returned failure'), 'Failed to remove from collection');
+    }
+  } catch (err) {
+    console.error('Error removing from collection:', err);
+    setError(err);
+    handleError(err, 'Failed to remove from collection');
+  }
+};
+
 
   const deletePersona = async (id) => {
     try {
@@ -180,5 +203,7 @@ export function usePersonasApi(token, onShowToast) {
     updatePersona,
     updatePersonaFavorite,
     deletePersona,
+    removePersonaFromCollection,
+
   };
 }

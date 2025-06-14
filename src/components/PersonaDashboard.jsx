@@ -78,16 +78,17 @@ export default function PersonaDashboard({
   }, [searchTerm, activeTags, showFavoritesOnly]);
 
   const handleSavePersona = async (persona) => {
-  // Bepaal collectionId:
   const collectionId =
     editingPersona && editingPersona.collectionId !== undefined
       ? editingPersona.collectionId
       : defaultCollectionId;
 
-  // Bouw personaToSave object → industry pattern → future-proof
+  const collectionIds = persona.collectionIds || persona.collection_ids || [];
+
   const personaToSave = {
     ...persona,
-    collectionId: collectionId
+    collectionId,
+    collectionIds, // ✅ DIT toevoegen
   };
 
   if (editingPersona) {
@@ -96,38 +97,42 @@ export default function PersonaDashboard({
       personaToSave.name,
       personaToSave.description,
       personaToSave.tags,
-      personaToSave.collectionId
+      personaToSave.collectionIds // ✅ Gebruik collectionIds hier!
     );
     onShowToast('Persona updated successfully!');
   } else {
     await createPersona(
-      personaToSave.name,
-      personaToSave.description,
-      personaToSave.tags,
-      personaToSave.collectionId
-    );
+  personaToSave.name,
+  personaToSave.description,
+  personaToSave.tags,
+  personaToSave.collectionIds // ✅ volledige array!
+);
     onShowToast('Persona created successfully!');
   }
 
-  // Refresh dashboard
   await fetchPersonas();
-
-  // Reset state
   setIsModalOpen(false);
   setEditingPersona(null);
   setIsEditing(false);
-
-  // 🧹 Clear draft always after Save
   localStorage.removeItem('vault_draft_persona');
 };
 
-
-
   const startEdit = (persona) => {
-    setEditingPersona(persona);
-    setIsEditing(true); // ✅ we zitten in edit mode
-    setIsModalOpen(true);
+  const enrichedPersona = {
+    ...persona,
+    collectionIds:
+      Array.isArray(persona.collectionIds) ? persona.collectionIds :
+      Array.isArray(persona.collection_ids) ? persona.collection_ids :
+      (typeof persona.collection_id === 'number' ? [persona.collection_id] : [])
   };
+
+  console.log("✏️ EDITING enrichedPersona:", enrichedPersona); // ✅ check hier
+  setEditingPersona(enrichedPersona);
+  setIsEditing(true);
+  setIsModalOpen(true);
+};
+
+
 
   const startCreate = () => {
     setEditingPersona(null);
@@ -196,10 +201,16 @@ export default function PersonaDashboard({
   key={editingPersona ? editingPersona.id : 'new'}
   onSave={handleSavePersona}
   initialData={
-    editingPersona
-      ? editingPersona
-      : { collectionId: defaultCollectionId } 
-  }
+  editingPersona
+    ? {
+        ...editingPersona,
+        collectionIds: editingPersona.collectionIds || [],
+      }
+    : {
+        collectionId: defaultCollectionId,
+        collectionIds: defaultCollectionId ? [defaultCollectionId] : []
+      }
+}
   collections={collections}
 />
       </Modal>
