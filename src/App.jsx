@@ -311,46 +311,28 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 </div>
 
 
-      <div className="max-w-5xl mx-auto mb-8 mt-4">
-
-  <div className="flex flex-col sm:flex-row sm:justify-center sm:space-x-4 space-y-2 sm:space-y-0">
-    <button
-      onClick={() => setSelectedTab('personas')}
-      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ease-in-out duration-200 transform ${
-        selectedTab === 'personas'
-          ? 'bg-blue-600 text-white scale-105 shadow-md'
-          : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
-      } focus:outline-none focus:ring-2 focus:ring-blue-400`}
-    >
-      Personas
-    </button>
-
-    <button
-      onClick={() => setSelectedTab('prompts')}
-      className={`px-4 py-2 rounded-full text-sm font-medium transition-all ease-in-out duration-200 transform ${
-        selectedTab === 'prompts'
-          ? 'bg-blue-600 text-white scale-105 shadow-md'
-          : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
-      } focus:outline-none focus:ring-2 focus:ring-blue-400`}
-    >
-      Prompts
-    </button>
-
-    <button
-  onClick={() => setSelectedTab('collections')}
-  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ease-in-out duration-200 transform ${
-    selectedTab === 'collections'
-      ? 'bg-blue-600 text-white scale-105 shadow-md'
-      : 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800'
-  } focus:outline-none focus:ring-2 focus:ring-blue-400`}
->
-  Collections
-</button>
-
-
+     <div className="max-w-5xl mx-auto mb-8 mt-4">
+  <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
+    {[
+      { id: 'personas', label: 'Personas' },
+      { id: 'prompts', label: 'Prompts' },
+      { id: 'collections', label: 'Collections' },
+    ].map(({ id, label }) => (
+      <button
+        key={id}
+        onClick={() => setSelectedTab(id)}
+        className={`px-3 py-1.5 rounded-md text-sm font-semibold tracking-tight transition-all duration-200
+          ${selectedTab === id
+            ? 'bg-blue-600 text-white shadow-sm ring-1 ring-blue-400'
+            : 'bg-blue-50 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200 dark:hover:bg-blue-800'
+          }`}
+      >
+        {label}
+      </button>
+    ))}
   </div>
-
 </div>
+
 
 {/* Independent scrolling blocks → fix for issue */}
 
