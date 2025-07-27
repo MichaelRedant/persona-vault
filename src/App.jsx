@@ -25,6 +25,7 @@ import CollectionPage from './pages/CollectionPage';
 import Modal from './components/Modal';
 import PersonaForm from './components/PersonaForm';
 import './index.css';
+import { testTokenValid } from './utils/tokenChecker';
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -46,7 +47,13 @@ function App() {
 });
   const [defaultCollectionIdForNewPersona, setDefaultCollectionIdForNewPersona] = useState(null); // → wordt meegegeven aan PersonaDashboard → defaultCollectionId prop
 
-  
+  useEffect(() => {
+  const msg = sessionStorage.getItem('vault_logout_message');
+  if (msg) {
+    setGlobalToastMessage(msg);
+    sessionStorage.removeItem('vault_logout_message');
+  }
+}, []);
 
 
   const [selectedTab, setSelectedTab] = useState(() => {
@@ -56,6 +63,39 @@ function App() {
   const [compactMode, setCompactMode] = useState(() => {
   return localStorage.getItem('vault_setting_compactMode') === 'true';
 });
+
+useEffect(() => {
+  const token = localStorage.getItem('vault_jwt_token');
+  const baseUrl = import.meta.env.VITE_API_BASE_URL;
+
+  if (!token || token.length < 100 || !token.startsWith('eyJ')) {
+    console.log('🔐 No valid token format found');
+    return;
+  }
+
+  const alreadyChecked = sessionStorage.getItem('vault_token_checked');
+  if (alreadyChecked) {
+    console.log('🔄 Token already checked this session');
+    return;
+  }
+
+  const checkToken = async () => {
+    console.log('🧪 Checking token validity...');
+    const isValid = await testTokenValid(baseUrl, token);
+    if (!isValid) {
+      console.warn('❌ Token invalid → logging out');
+      sessionStorage.setItem('vault_token_checked', '1');
+      localStorage.removeItem('vault_jwt_token');
+      sessionStorage.setItem('vault_logout_message', 'Your session has expired, please log in again.');
+      window.location.reload(); 
+    } else {
+      sessionStorage.setItem('vault_token_checked', '1');
+      console.log('✅ Token is valid');
+    }
+  };
+
+  checkToken();
+}, []);
 
 useEffect(() => {
   const handleStorageChange = () => {
@@ -190,7 +230,10 @@ useEffect(() => {
   }
   
   
-
+ const handleLogout = () => {
+  localStorage.removeItem('token');
+  setToken(null);
+};
   
 
 
@@ -278,6 +321,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
   searchTerm={searchTerm}
   setSearchTerm={setSearchTerm}
   username={username}
+  onLogout={handleLogout}
   onOpenProfile={() => setIsProfileModalOpen(true)}
   createPersona={createPersona} // ✅ toevoegen
   createPrompt={createPrompt}   // ✅ toevoegen

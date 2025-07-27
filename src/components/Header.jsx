@@ -4,7 +4,7 @@ import DarkModeSwitch from './DarkModeSwitch';
 import AboutModal from './AboutModal';
 import SearchBar from './SearchBar';
 import { HiDotsVertical } from 'react-icons/hi';
-import { FiUpload, FiDownload, FiInfo, FiSettings } from 'react-icons/fi';
+import { FiUpload, FiDownload, FiInfo, FiSettings, FiLogOut, FiUser } from 'react-icons/fi';
 import TagManagerModal from './TagManagerModal';
 import logoLight from '/logo-light.svg';
 import logoDark from '/logo-dark.svg';
@@ -23,7 +23,8 @@ export default function Header({
   fetchPrompts,
   deletePersona,
   deletePrompt,
-   handleUpdateTags, 
+  handleUpdateTags, 
+  onLogout
 }) {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
@@ -161,10 +162,40 @@ export default function Header({
 
             {/* Username */}
             {username && (
-              <span className="hidden sm:inline text-sm text-gray-700 dark:text-gray-300">
-                Hello, {username}
-              </span>
-            )}
+  <Menu as="div" className="relative">
+    <Menu.Button className="flex items-center gap-2 px-3 py-2 rounded-full text-sm font-medium bg-blue-100 dark:bg-gray-700 text-blue-900 dark:text-gray-100 hover:bg-blue-200 dark:hover:bg-gray-600 transition focus:outline-none">
+      <FiUser className="text-blue-500 dark:text-blue-300" />
+      <span>{username}</span>
+    </Menu.Button>
+
+    <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-lg bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+      <div className="py-1 text-sm text-gray-700 dark:text-gray-200">
+        <Menu.Item>
+          {({ active }) => (
+            <button
+              onClick={onOpenProfile}
+              className={`${active ? 'bg-gray-100 dark:bg-gray-700' : ''} group flex items-center w-full px-4 py-2 text-sm`}
+            >
+              <FiUser className="mr-3 w-5 h-5" />
+              Profile
+            </button>
+          )}
+        </Menu.Item>
+        <Menu.Item>
+          {({ active }) => (
+            <button
+              onClick={onLogout}
+              className={`${active ? 'bg-red-100 dark:bg-red-700' : ''} group flex items-center w-full px-4 py-2 text-sm text-red-600 dark:text-red-300`}
+            >
+              <FiLogOut className="mr-3 w-5 h-5" />
+              Log out
+            </button>
+          )}
+        </Menu.Item>
+      </div>
+    </Menu.Items>
+  </Menu>
+)}
 
             <DarkModeSwitch />
           </div>
