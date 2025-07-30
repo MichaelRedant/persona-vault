@@ -73,27 +73,39 @@ export function usePromptsApi(token, onShowToast) {
   };
 
   const updatePrompt = async (id, title, content, category, tags = []) => {
-    try {
-      const response = await fetch(`${BASE_URL}/prompts_update.php`, {
+  try {
+    const response = await fetch(`${BASE_URL}/prompts_update.php`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ id, title, content, category, tags }),
+    });
+
+    const data = await response.json();
+    if (data.success) {
+      // 🔁 Save revision after successful update
+      await fetch(`${BASE_URL}/prompt_save_revision.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ id, title, content, category, tags }),
+        body: JSON.stringify({ id })
       });
-      const data = await response.json();
-      if (data.success) {
-        await fetchPrompts();
-      } else {
-        handleError(new Error('API returned failure'), 'Failed to update prompt');
-      }
-    } catch (err) {
-      console.error('Failed to update prompt:', err);
-      setError(err);
-      handleError(err, 'Failed to update prompt');
+
+      await fetchPrompts();
+    } else {
+      handleError(new Error('API returned failure'), 'Failed to update prompt');
     }
-  };
+  } catch (err) {
+    console.error('Failed to update prompt:', err);
+    setError(err);
+    handleError(err, 'Failed to update prompt');
+  }
+};
+
 
   const updatePromptFavorite = async (id, favorite) => {
     try {

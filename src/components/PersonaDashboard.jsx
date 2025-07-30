@@ -3,6 +3,8 @@ import PersonaForm from './PersonaForm';
 import PersonaCard from './PersonaCard';
 import Button from './Button';
 import { useState, useEffect, useRef } from 'react';
+import { usePersonaRevisionsApi } from '../hooks/usePersonaRevisionsApi';
+import RevisionsModal from './RevisionsModal';
 
 export default function PersonaDashboard({
   personas,
@@ -17,13 +19,22 @@ export default function PersonaDashboard({
   sortOption,
   onShowToast,
   collections,
-  defaultCollectionId = null
+  defaultCollectionId = null,
+  token
 }) {
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [editingPersona, setEditingPersona] = useState(null);
-  const [isEditing, setIsEditing] = useState(false); // ✅ nieuw → track Add of Edit mode
-  const [visibleCount, setVisibleCount] = useState(20);
-  const loadMoreRef = useRef();
+ const [isModalOpen, setIsModalOpen] = useState(false);
+const [editingPersona, setEditingPersona] = useState(null);
+const [isEditing, setIsEditing] = useState(false);
+const [visibleCount, setVisibleCount] = useState(20);
+const [selectedPersonaForRevisions, setSelectedPersonaForRevisions] = useState(null);
+const loadMoreRef = useRef();
+
+const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevisionsApi(token);
+
+  const openRevisionsModal = async (persona) => {
+  await fetchRevisions(persona.id);
+  setSelectedPersonaForRevisions(persona);
+};
 
   const filteredPersonas = personas
     .filter((item) =>
@@ -49,6 +60,15 @@ export default function PersonaDashboard({
   const handleLoadMore = () => {
     setVisibleCount((prev) => prev + 20);
   };
+
+  
+  useEffect(() => {
+  if (editingPersona?.id) {
+    fetchRevisions(editingPersona.id);
+  }
+}, [editingPersona?.id, fetchRevisions]);
+
+
 
   useEffect(() => {
     const currentElement = loadMoreRef.current;
@@ -171,6 +191,8 @@ export default function PersonaDashboard({
     }}
     onEdit={startEdit}
     onShowToast={onShowToast}
+    onViewRevisions={() => openRevisionsModal(persona)}
+    
   />
 ))
       )}
@@ -214,6 +236,27 @@ export default function PersonaDashboard({
   collections={collections}
 />
       </Modal>
+
+      <RevisionsModal
+  isOpen={!!selectedPersonaForRevisions}
+  onClose={() => setSelectedPersonaForRevisions(null)}
+  revisions={revisions}
+  loading={loadingRevisions}
+  currentPrompt={selectedPersonaForRevisions}
+  onRollback={async (revision) => {
+    await updatePersona(
+      selectedPersonaForRevisions.id,
+      revision.name,
+      revision.description,
+      revision.tags,
+      revision.collection_ids
+    );
+    await fetchPersonas();
+    onShowToast('Persona rolled back to revision.');
+    setSelectedPersonaForRevisions(null);
+  }}
+/>
+
     </div>
   );
 }

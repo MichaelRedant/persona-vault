@@ -4,9 +4,9 @@ import TryInPlatformButtons from './TryInPlatformButtons';
 import Button from './Button';
 import ConfirmDialog from './ConfirmDialog';
 import { AiFillStar, AiOutlineStar } from 'react-icons/ai';
-import { FiEdit2, FiTrash2, FiDownload, FiCopy } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiClock, FiDownload, FiCopy } from 'react-icons/fi';
 
-export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDelete, onEdit, onShowToast }) {
+export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDelete, onEdit, onShowToast, onViewRevisions }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleCopy = (htmlContent) => {
@@ -100,6 +100,13 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
             className="w-10 h-10 text-xl p-0 flex items-center justify-center"
             title="Export"
           />
+          <Button
+  onClick={() => onViewRevisions(prompt)}
+  variant="secondary"
+  icon={<FiClock />}
+  className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+  title="Revision History"
+/>
         </div>
       </div>
 

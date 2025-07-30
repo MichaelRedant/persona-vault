@@ -124,6 +124,22 @@ body {
 }
 
 /* ============================================================
+ * Rollback and Revision History → ins and del styles
+ * ============================================================
+*/
+
+ins {
+  background-color: #bbf7d0; /* lichtgroen */
+  text-decoration: none;
+}
+
+del {
+  background-color: #fecaca; /* lichtrood */
+  text-decoration: line-through;
+}
+
+
+/* ============================================================
  * Scrollbar Styling → Modern clean scrollbar
  * ============================================================
 */

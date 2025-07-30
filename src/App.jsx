@@ -501,6 +501,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 isModalOpen={isPersonaModalOpen}
 setIsModalOpen={setIsPersonaModalOpen}
 setEditingPersona={setEditingPersona}
+token={token}
 
       />
     </div>

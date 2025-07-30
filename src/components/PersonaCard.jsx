@@ -2,7 +2,7 @@ import { useState, useMemo } from 'react';
 import { downloadAsJson } from '../utils/downloadAsJson';
 import TryInPlatformButtons from './TryInPlatformButtons';
 import { AiFillStar, AiOutlineStar } from 'react-icons/ai';
-import { FiEdit2, FiTrash2, FiDownload, FiCopy } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiClock, FiDownload, FiCopy } from 'react-icons/fi';
 import ConfirmDialog from './ConfirmDialog';
 import Button from './Button';
 
@@ -13,7 +13,8 @@ export default function PersonaCard({
   onToggleFavorite,
   onDelete,
   onEdit,
-  onShowToast
+  onShowToast,
+  onViewRevisions,
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -132,6 +133,14 @@ export default function PersonaCard({
             className="w-10 h-10 text-xl p-0 flex items-center justify-center"
             title="Export"
           />
+          <Button
+  onClick={() => onViewRevisions(persona)}
+  variant="secondary"
+  icon={<FiClock />}
+  className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+  title="Revision History"
+/>
+
         </div>
       </div>
 

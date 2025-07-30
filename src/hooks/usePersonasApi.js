@@ -70,6 +70,7 @@ export function usePersonasApi(token, onShowToast) {
     setError(err);
     handleError(err, 'Failed to create persona');
   }
+  
 };
 
 
@@ -77,14 +78,28 @@ export function usePersonasApi(token, onShowToast) {
 
   const updatePersona = async (id, name, description, tags = [], collectionIds = []) => {
   try {
+    // ⬇️ Eerst de bestaande versie bewaren
+    await fetch(`${BASE_URL}/persona_save_revision.php`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`,
+      },
+      body: JSON.stringify({ id })
+    });
+    
+
+    // ⬇️ Daarna pas updaten
     const response = await fetch(`${BASE_URL}/personas_update.php`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ id, name, description, tags, collectionIds }), // ✅ array
+      body: JSON.stringify({ id, name, description, tags, collectionIds }),
     });
+    
+
     const data = await response.json();
     if (data.success) {
       await fetchPersonas();

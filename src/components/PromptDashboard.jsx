@@ -2,7 +2,9 @@ import Modal from './Modal';
 import PromptForm from './PromptForm';
 import PromptCard from './PromptCard';
 import Button from './Button';
+import RevisionsModal from './RevisionsModal'; // 👈 nieuwe component
 import { useState, useEffect, useRef } from 'react';
+import { usePromptRevisionsApi } from '../hooks/usePromptRevisionsApi';
 
 export default function PromptDashboard({
   prompts,
@@ -15,20 +17,24 @@ export default function PromptDashboard({
   activeTags,
   showFavoritesOnly,
   sortOption,
-  onShowToast
+  onShowToast,
+  token
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState(null);
-  const [isEditing, setIsEditing] = useState(false); // ✅ voeg isEditing toe
+  const [isEditing, setIsEditing] = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
   const loadMoreRef = useRef();
+
+  const [selectedPromptForRevisions, setSelectedPromptForRevisions] = useState(null);
+  const { revisions, loading: loadingRevisions, fetchRevisions } = usePromptRevisionsApi(token);
 
   const filteredPrompts = prompts
     .filter((prompt) =>
       (!showFavoritesOnly || prompt.favorite) &&
       (activeTags.length === 0 || (prompt.tags || []).some(tag => activeTags.includes(tag))) &&
       (prompt.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-       prompt.content.toLowerCase().includes(searchTerm.toLowerCase()))
+        prompt.content.toLowerCase().includes(searchTerm.toLowerCase()))
     )
     .sort((a, b) => {
       if (sortOption === 'newest') return b.id - a.id;
@@ -40,36 +46,24 @@ export default function PromptDashboard({
 
   const hasMore = visibleCount < filteredPrompts.length;
 
-  const handleLoadMore = () => {
-    setVisibleCount((prev) => prev + 20);
-  };
+  const handleLoadMore = () => setVisibleCount((prev) => prev + 20);
 
   useEffect(() => {
     const currentElement = loadMoreRef.current;
-
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) {
-          handleLoadMore();
-        }
+        if (entries[0].isIntersecting) handleLoadMore();
       },
       { threshold: 1 }
     );
 
-    if (currentElement) {
-      observer.observe(currentElement);
-    }
-
+    if (currentElement) observer.observe(currentElement);
     return () => {
-      if (currentElement) {
-        observer.unobserve(currentElement);
-      }
+      if (currentElement) observer.unobserve(currentElement);
     };
   }, [filteredPrompts.length, visibleCount]);
 
-  useEffect(() => {
-    setVisibleCount(20);
-  }, [searchTerm, activeTags, showFavoritesOnly]);
+  useEffect(() => setVisibleCount(20), [searchTerm, activeTags, showFavoritesOnly]);
 
   const handleSavePrompt = async (prompt) => {
     if (editingPrompt) {
@@ -79,25 +73,22 @@ export default function PromptDashboard({
       await createPrompt(prompt.title, prompt.content, prompt.category, prompt.tags);
       onShowToast('Prompt created successfully!');
     }
-
     await fetchPrompts();
     setIsModalOpen(false);
     setEditingPrompt(null);
     setIsEditing(false);
-
-    // 🧹 Clear draft after save
     localStorage.removeItem('vault_draft_prompt');
   };
 
   const startEdit = (prompt) => {
     setEditingPrompt(prompt);
-    setIsEditing(true); // ✅ we zitten in edit mode
+    setIsEditing(true);
     setIsModalOpen(true);
   };
 
   const startCreate = () => {
     setEditingPrompt(null);
-    setIsEditing(false); // ✅ we zitten in add mode → laat draft staan
+    setIsEditing(false);
     setIsModalOpen(true);
   };
 
@@ -105,6 +96,11 @@ export default function PromptDashboard({
     await updatePromptFavorite(id, currentFavorite ? 0 : 1);
     await fetchPrompts();
     onShowToast('Favorite updated!');
+  };
+
+  const openRevisionsModal = async (prompt) => {
+    await fetchRevisions(prompt.id);
+    setSelectedPromptForRevisions(prompt);
   };
 
   return (
@@ -132,12 +128,12 @@ export default function PromptDashboard({
               onShowToast('Prompt deleted.');
             }}
             onEdit={startEdit}
+            onViewRevisions={() => openRevisionsModal(prompt)}
             onShowToast={onShowToast}
           />
         ))
       )}
 
-      {/* Lazy Loading Trigger */}
       {hasMore && (
         <div ref={loadMoreRef} className="h-16 flex justify-center items-center">
           <div className="relative w-6 h-6">
@@ -148,24 +144,43 @@ export default function PromptDashboard({
         </div>
       )}
 
-      {/* Modal */}
-      <Modal isOpen={isModalOpen} onClose={() => {
-        setIsModalOpen(false);
-        setEditingPrompt(null);
-
-        // 🧹 Alleen clear draft als we in edit mode waren
-        if (isEditing) {
-          localStorage.removeItem('vault_draft_prompt');
-        }
-
-        setIsEditing(false);
-      }}>
+      {/* Modal voor bewerken of aanmaken */}
+      <Modal
+        isOpen={isModalOpen}
+        onClose={() => {
+          setIsModalOpen(false);
+          setEditingPrompt(null);
+          if (isEditing) localStorage.removeItem('vault_draft_prompt');
+          setIsEditing(false);
+        }}
+      >
         <PromptForm
           key={editingPrompt ? editingPrompt.id : 'new'}
           onSave={handleSavePrompt}
           initialData={editingPrompt}
         />
       </Modal>
+
+      {/* Revisie Modal */}
+      <RevisionsModal
+        isOpen={!!selectedPromptForRevisions}
+        onClose={() => setSelectedPromptForRevisions(null)}
+        revisions={revisions}
+        loading={loadingRevisions}
+        currentPrompt={selectedPromptForRevisions}
+        onRollback={async (revision) => {
+          await updatePrompt(
+  selectedPromptForRevisions.id,
+  revision.title,
+  revision.content,
+  revision.category,
+  revision.tags
+);
+          await fetchPrompts();
+          onShowToast('Prompt rolled back to revision.');
+          setSelectedPromptForRevisions(null);
+        }}
+      />
     </div>
   );
 }
