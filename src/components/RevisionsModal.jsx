@@ -3,19 +3,27 @@ import Button from './Button';
 import { diffWords } from 'diff';
 import { useMemo, useState } from 'react';
 
-// Helper: strip HTML for diffing only on visible text (optioneel)
+// 🔒 HTML-stripping helper
 const stripHtml = (html) => {
   const temp = document.createElement('div');
   temp.innerHTML = html;
   return temp.textContent || temp.innerText || '';
 };
 
-// Helper: HTML escape (optioneel extra veiligheid)
-const escapeHtml = (unsafe) => {
-  return unsafe
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+// 🛡️ HTML escape helper
+const escapeHtml = (unsafe) => unsafe
+  .replace(/&/g, "&amp;")
+  .replace(/</g, "&lt;")
+  .replace(/>/g, "&gt;");
+
+// 🔍 Render diff to safe HTML
+const renderDiffHtml = (oldVal = '', newVal = '') => {
+  const diff = diffWords(stripHtml(oldVal), stripHtml(newVal));
+  return diff.map((part) => {
+    if (part.added) return `<ins class="bg-green-200 dark:bg-green-800 px-1">${escapeHtml(part.value)}</ins>`;
+    if (part.removed) return `<del class="bg-red-200 dark:bg-red-800 px-1 line-through">${escapeHtml(part.value)}</del>`;
+    return `<span>${escapeHtml(part.value)}</span>`;
+  }).join('');
 };
 
 export default function RevisionsModal({
@@ -29,34 +37,27 @@ export default function RevisionsModal({
 }) {
   const label = type === 'persona' ? 'Persona' : 'Prompt';
   const [selectedRevision, setSelectedRevision] = useState(null);
-  const currentData = useMemo(() => currentPrompt || {}, [currentPrompt]);
+  const currentData = currentPrompt || {};
 
-  const renderDiffHtml = (oldVal = '', newVal = '') => {
-    const diff = diffWords(stripHtml(oldVal), stripHtml(newVal));
-    return diff
-      .map((part) => {
-        if (part.added) return `<ins>${escapeHtml(part.value)}</ins>`;
-        if (part.removed) return `<del>${escapeHtml(part.value)}</del>`;
-        return escapeHtml(part.value);
-      })
-      .join('');
-  };
+  if (!isOpen) return null;
 
   const renderDiffSafe = (oldVal, newVal) => ({
     __html: renderDiffHtml(oldVal, newVal),
   });
 
   const prepareTags = (tags) =>
-    Array.isArray(tags)
-      ? tags.join(', ')
-      : typeof tags === 'string'
-      ? tags
-      : '';
+    Array.isArray(tags) ? tags.join(', ')
+    : typeof tags === 'string' ? tags
+    : '';
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose}>
-      <div className="max-w-4xl">
-        <h2 className="text-xl font-semibold mb-4">{label} Revision History</h2>
+    <Modal isOpen={isOpen} onClose={onClose} size="full" className="w-[95vw]">
+      <div className="w-[95vw] max-h-[90vh] bg-white dark:bg-gray-900 p-6 rounded-xl overflow-hidden flex flex-col gap-6">
+
+
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+      {label} Revision History
+    </h2>
 
         {loading ? (
           <div className="text-gray-500 dark:text-gray-300">Loading revisions...</div>
@@ -65,18 +66,26 @@ export default function RevisionsModal({
             No revisions available for this {label.toLowerCase()}.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto pr-2">
-            {/* Revision List */}
-            <div>
-              <h3 className="font-semibold mb-2">Revision List</h3>
-              <ul className="space-y-2">
+          <div className="flex flex-col md:flex-row gap-6 overflow-hidden flex-1">
+
+            {/* Sidebar: Revision List */}
+           <div className="w-full md:w-[340px] flex-shrink-0 border-r border-gray-200 dark:border-gray-700 overflow-y-auto pr-2">
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">Revision List</h3>
+              <ul className="space-y-2 pb-4">
                 {revisions.map((rev) => (
-                  <li key={rev.id} className="border rounded p-3 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
-                    <div className="text-sm text-gray-800 dark:text-gray-200 font-medium">{rev.name}</div>
-                    <div className="text-xs text-gray-500 dark:text-gray-400">
-                      Saved at: {new Date(rev.created_at).toLocaleString()}
+                  <li
+                    key={rev.id}
+                    className={`border rounded-lg p-3 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 ${
+                      selectedRevision?.id === rev.id ? 'ring-2 ring-blue-500' : ''
+                    }`}
+                  >
+                    <div className="text-sm font-semibold text-gray-800 dark:text-gray-100">
+                      {rev.name || rev.title || '(no title)'}
                     </div>
-                    <div className="mt-2 flex gap-2">
+                    <div className="text-xs text-gray-500 dark:text-gray-400">
+                      {new Date(rev.created_at).toLocaleString()}
+                    </div>
+                    <div className="mt-2 flex flex-wrap gap-2">
                       <Button size="sm" variant="outline" onClick={() => setSelectedRevision(rev)}>
                         Compare
                       </Button>
@@ -89,24 +98,25 @@ export default function RevisionsModal({
               </ul>
             </div>
 
-            {/* Comparison */}
-            <div>
-              <h3 className="font-semibold mb-2">Comparison</h3>
+            {/* Main: Comparison */}
+            <div className="flex-1 overflow-y-auto">
+              <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-4">Comparison</h3>
+
               {!selectedRevision ? (
                 <p className="text-sm text-gray-500 dark:text-gray-400">Select a revision to compare.</p>
               ) : (
-                <div className="space-y-4 text-sm text-gray-800 dark:text-gray-200">
+                <div className="space-y-6 text-sm text-gray-800 dark:text-gray-200 prose dark:prose-invert max-w-none">
                   <div>
-                    <span className="font-bold">Name:</span>
-                    <div className="mt-1" dangerouslySetInnerHTML={renderDiffSafe(selectedRevision.name, currentData.name)} />
+                    <p className="font-bold">Name:</p>
+                    <div dangerouslySetInnerHTML={renderDiffSafe(selectedRevision.name, currentData.name)} />
                   </div>
                   <div>
-                    <span className="font-bold">Description:</span>
-                    <div className="mt-1 prose prose-sm max-w-none dark:prose-invert" dangerouslySetInnerHTML={renderDiffSafe(selectedRevision.description, currentData.description)} />
+                    <p className="font-bold">Description:</p>
+                    <div dangerouslySetInnerHTML={renderDiffSafe(selectedRevision.description, currentData.description)} />
                   </div>
                   <div>
-                    <span className="font-bold">Tags:</span>
-                    <div className="mt-1" dangerouslySetInnerHTML={renderDiffSafe(prepareTags(selectedRevision.tags), prepareTags(currentData.tags))} />
+                    <p className="font-bold">Tags:</p>
+                    <div dangerouslySetInnerHTML={renderDiffSafe(prepareTags(selectedRevision.tags), prepareTags(currentData.tags))} />
                   </div>
                 </div>
               )}
@@ -114,7 +124,7 @@ export default function RevisionsModal({
           </div>
         )}
 
-        <div className="mt-6 flex justify-end">
+        <div className="pt-4 flex justify-end border-t border-gray-200 dark:border-gray-700">
           <Button onClick={onClose} variant="secondary">
             Close
           </Button>

@@ -1,5 +1,18 @@
-export default function Modal({ isOpen, onClose, children }) {
+export default function Modal({ isOpen, onClose, children, size = 'lg', className = '' }) {
   if (!isOpen) return null;
+
+  // Mapping voor standaard breedtes
+  const sizeMap = {
+    sm: 'max-w-sm',
+    md: 'max-w-md',
+    lg: 'max-w-lg',
+    xl: 'max-w-xl',
+    '2xl': 'max-w-2xl',
+    full: 'max-w-full w-full', // voor fullscreen modals
+    none: '', // laat de calling component volledig bepalen
+  };
+
+  const widthClass = sizeMap[size] || sizeMap['lg'];
 
   return (
     <div
@@ -7,14 +20,14 @@ export default function Modal({ isOpen, onClose, children }) {
       onClick={onClose}
     >
       <div
-        className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-lg w-full max-h-[80vh] overflow-y-auto relative transform transition-all duration-300 ease-in-out scale-95 opacity-0 animate-fadeIn"
+        className={`bg-white dark:bg-gray-800 rounded-lg p-6 ${widthClass} ${className} max-h-[90vh] overflow-y-auto relative transform transition-all duration-300 ease-in-out scale-95 opacity-0 animate-fadeIn`}
         onClick={(e) => e.stopPropagation()}
       >
         <button
           onClick={onClose}
           className="absolute top-2 right-2 text-gray-600 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white"
         >
-          ✖️
+          ×
         </button>
         {children}
       </div>
