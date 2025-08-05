@@ -8,8 +8,6 @@ import ForgotPasswordModal from './ForgotPasswordModal';
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
 
-const BASE_URL =
-  import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
 
 export default function LoginForm({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
