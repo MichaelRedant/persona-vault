@@ -54,6 +54,7 @@ if (!$workspaceId) {
 
 // Log login time for user session tracking
 try {
+
     $pdo->exec(
         "CREATE TABLE IF NOT EXISTS user_sessions (
             id INT AUTO_INCREMENT PRIMARY KEY,
@@ -69,6 +70,7 @@ try {
 } catch (PDOException $e) {
     // If session logging fails, continue without blocking login
     error_log('Session log failed: ' . $e->getMessage());
+
 }
 
 // ✅ JWT genereren (met admin-info)
@@ -80,3 +82,5 @@ $token = generate_jwt([
 ], 3600 * 24 * 7);
 
 echo json_encode(['success' => true, 'token' => trim($token)]);
+exit;
+
