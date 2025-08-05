@@ -104,7 +104,7 @@ export default function PromptDashboard({
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="flex justify-end mb-6">
         <Button variant="primary" onClick={startCreate}>
           + Add Prompt
@@ -117,21 +117,23 @@ export default function PromptDashboard({
           <p className="text-sm">Try adjusting your search or filters.</p>
         </div>
       ) : (
-        filteredPrompts.slice(0, visibleCount).map((prompt) => (
-          <PromptCard
-            key={prompt.id}
-            prompt={prompt}
-            onToggleFavorite={(id, currentFavorite) => toggleFavorite(id, currentFavorite)}
-            onDelete={async () => {
-              await deletePrompt(prompt.id);
-              await fetchPrompts();
-              onShowToast('Prompt deleted.');
-            }}
-            onEdit={startEdit}
-            onViewRevisions={() => openRevisionsModal(prompt)}
-            onShowToast={onShowToast}
-          />
-        ))
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredPrompts.slice(0, visibleCount).map((prompt) => (
+            <PromptCard
+              key={prompt.id}
+              prompt={prompt}
+              onToggleFavorite={(id, currentFavorite) => toggleFavorite(id, currentFavorite)}
+              onDelete={async () => {
+                await deletePrompt(prompt.id);
+                await fetchPrompts();
+                onShowToast('Prompt deleted.');
+              }}
+              onEdit={startEdit}
+              onViewRevisions={() => openRevisionsModal(prompt)}
+              onShowToast={onShowToast}
+            />
+          ))}
+        </div>
       )}
 
       {hasMore && (

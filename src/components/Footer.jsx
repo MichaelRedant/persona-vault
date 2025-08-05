@@ -28,7 +28,7 @@ export default function Footer({ username, personasCount, promptsCount, onOpenSe
 
   return (
     <footer className="mt-12 py-6 text-xs text-gray-500 dark:text-gray-400 w-full bg-transparent">
-      <div className="max-w-5xl mx-auto px-4 flex flex-wrap justify-between items-center">
+      <div className="max-w-screen-xl mx-auto px-2 sm:px-4 flex flex-wrap justify-between items-center">
         <div className="mb-2 sm:mb-0 space-y-1 text-sm">
           <div>
             Personas: <strong>{personasCount}</strong> | Prompts: <strong>{promptsCount}</strong>
