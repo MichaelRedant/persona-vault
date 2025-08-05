@@ -463,7 +463,9 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 </div>
 
 
+
      <div className="hidden sm:block max-w-screen-xl mx-auto px-2 sm:px-4 mb-8 mt-4">
+
   <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
     {[
       { id: 'personas', label: 'Personas' },
