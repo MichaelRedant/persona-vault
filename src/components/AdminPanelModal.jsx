@@ -91,6 +91,8 @@ export default function AdminPanelModal({ isOpen, onClose, token, onToast }) {
                   <th className="px-2 py-1">Prompts</th>
                   <th className="px-2 py-1">Collections</th>
                   <th className="px-2 py-1">Workspaces</th>
+                  <th className="px-2 py-1">Logins</th>
+                  <th className="px-2 py-1">Avg session (min)</th>
                   <th className="px-2 py-1">Admin</th>
                 </tr>
               </thead>
@@ -102,12 +104,14 @@ export default function AdminPanelModal({ isOpen, onClose, token, onToast }) {
                     <td className="px-2 py-1">{u.prompt_count}</td>
                     <td className="px-2 py-1">{u.collection_count}</td>
                     <td className="px-2 py-1">{u.workspace_count}</td>
+                    <td className="px-2 py-1">{u.login_count}</td>
+                    <td className="px-2 py-1">{u.avg_session_minutes.toFixed(1)}</td>
                     <td className="px-2 py-1">{u.is_admin ? 'Yes' : 'No'}</td>
                   </tr>
                 ))}
                 {users.length === 0 && (
                   <tr>
-                    <td className="px-2 py-1 text-gray-500" colSpan="6">
+                    <td className="px-2 py-1 text-gray-500" colSpan="8">
                       No users found
                     </td>
                   </tr>

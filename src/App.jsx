@@ -270,9 +270,23 @@ useEffect(() => {
   }
   
   
- const handleLogout = () => {
-  localStorage.removeItem('token');
-  setToken(null);
+ const handleLogout = async () => {
+  try {
+    const baseUrl = import.meta.env.VITE_API_BASE_URL;
+    await fetch(`${baseUrl}/auth_logout.php`, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`
+      }
+    });
+  } catch (err) {
+    console.error(err);
+  } finally {
+    localStorage.removeItem('vault_jwt_token');
+    setToken(null);
+    setUsername('');
+    setDecodedToken(null);
+  }
 };
   
 
@@ -687,12 +701,7 @@ token={token}
   favoriteCount={favoriteCount}
   promptsWithoutTagCount={promptsWithoutTagCount}
   tagsUsed={tagsUsed}
-  onLogout={() => {
-    localStorage.removeItem('vault_jwt_token');
-    setToken(null);
-    setUsername('');
-    setDecodedToken(null);
-  }}
+  onLogout={handleLogout}
   onClose={() => setIsProfileModalOpen(false)}
   onNewPrompt={() => {
     setSelectedTab('prompts');
