@@ -7,6 +7,7 @@ import FavoritesFilter from './components/FavoritesFilter';
 import Header from './components/Header';
 import Toast from './components/Toast';
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { usePersonasApi } from './hooks/usePersonasApi';
 import { usePromptsApi } from './hooks/usePromptsApi';
 import { useCollectionsApi } from './hooks/useCollectionsApi';
@@ -256,7 +257,18 @@ useEffect(() => {
 }, [activeCollectionId]);
 
 
-  const [authTab, setAuthTab] = useState('login');
+  const location = useLocation();
+  const [authTab, setAuthTab] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('register') ? 'register' : 'login';
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('register')) {
+      setAuthTab('register');
+    }
+  }, [location.search]);
 
   if (!token) {
     return (
@@ -421,20 +433,50 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
       </div>
     </div>
 
-    <button
-      className="ml-4 mt-2 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-all"
-      onClick={() => {
-        const name = prompt('Name your workspace:');
-        if (name && name.trim().length > 1) {
-          createWorkspace(name.trim()).then(() => {
-            setGlobalToastMessage(`New workspace "${name}" has been made!`);
-            fetchWorkspaces();
-          });
-        }
-      }}
-    >
-      + New workspace
-    </button>
+    <div className="flex items-center">
+      <button
+        className="ml-4 mt-2 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-all"
+        onClick={() => {
+          const name = prompt('Name your workspace:');
+          if (name && name.trim().length > 1) {
+            createWorkspace(name.trim()).then(() => {
+              setGlobalToastMessage(`New workspace "${name}" has been made!`);
+              fetchWorkspaces();
+            });
+          }
+        }}
+      >
+        + New workspace
+      </button>
+      <button
+        className="ml-2 mt-2 px-3 py-1.5 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-all"
+        onClick={async () => {
+          try {
+            const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/workspaces_share_create.php`, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${token}`,
+              },
+              body: JSON.stringify({ workspace_id: activeWorkspaceId }),
+            });
+            const data = await res.json();
+            if (data.success) {
+              const shareUrl = `${window.location.origin}/vault/share/${data.token}`;
+              await navigator.clipboard.writeText(shareUrl);
+              setGlobalToastMessage('Share link copied to clipboard');
+            } else {
+              setGlobalToastMessage(data.message || 'Failed to create share link');
+            }
+          } catch (err) {
+            console.error(err);
+            setGlobalToastMessage('Error creating share link');
+          }
+        }}
+      >
+        Share
+      </button>
+    </div>
   </div>
 )}
 
