@@ -6,6 +6,12 @@ import Button from '../components/Button';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
 
+import { FiUsers, FiFileText, FiCopy } from 'react-icons/fi';
+
+export default function SharedWorkspace() {
+  const { token: shareToken } = useParams();
+  const navigate = useNavigate();
+
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -17,28 +23,27 @@ import Footer from '../components/Footer';
     const jwt = localStorage.getItem('vault_jwt_token');
     if (!jwt) {
       navigate('/?register=1', { replace: true });
-      return;
+    } else {
+      try {
+        const decoded = jwtDecode(jwt);
+        setUsername(decoded.username || decoded.email || '');
+      } catch (e) {
+        console.error('Failed to decode token', e);
+      }
+
+      fetch(
+        `${import.meta.env.VITE_API_BASE_URL}/workspaces_share_get.php?token=${shareToken}`
+      )
+        .then(res => res.json())
+        .then(result => {
+          if (result.success) {
+            setData(result);
+          } else {
+            setError(result.message || 'Failed to load workspace');
+          }
+        })
+        .catch(() => setError('Failed to load workspace'));
     }
-
-
-    try {
-      const decoded = jwtDecode(jwt);
-      setUsername(decoded.username || decoded.email || '');
-    } catch (e) {
-      console.error('Failed to decode token', e);
-    }
-
-    fetch(`${import.meta.env.VITE_API_BASE_URL}/workspaces_share_get.php?token=${shareToken}`)
-
-      .then(res => res.json())
-      .then(result => {
-        if (result.success) {
-          setData(result);
-        } else {
-          setError(result.message || 'Failed to load workspace');
-        }
-      })
-      .catch(() => setError('Failed to load workspace'));
 
   }, [shareToken, navigate]);
 
@@ -46,6 +51,7 @@ import Footer from '../components/Footer';
     localStorage.removeItem('vault_jwt_token');
     navigate('/', { replace: true });
   };
+
 
 
   if (error) {
