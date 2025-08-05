@@ -8,6 +8,9 @@ import ForgotPasswordModal from './ForgotPasswordModal';
 const BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
 
+const BASE_URL =
+  import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
+
 export default function LoginForm({ onLoginSuccess }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -69,6 +72,7 @@ export default function LoginForm({ onLoginSuccess }) {
           required
         />
 
+
         <div className="flex justify-end">
           <button
             type="button"
@@ -79,6 +83,7 @@ export default function LoginForm({ onLoginSuccess }) {
           </button>
         </div>
 
+
         <Button type="submit" disabled={loading} className="w-full">
           {loading ? 'Logging in...' : 'Login'}
         </Button>
@@ -88,6 +93,7 @@ export default function LoginForm({ onLoginSuccess }) {
         isOpen={showForgot}
         onClose={() => setShowForgot(false)}
       />
+
     </div>
   );
 }
