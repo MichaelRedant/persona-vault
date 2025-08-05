@@ -91,6 +91,31 @@ export function useCollectionsApi(token, onShowToast, workspaceId) {
     }
   }, [token, fetchCollections, stableHandleError, workspaceId]);
 
+  const renameCollection = useCallback(async (id, name) => {
+    try {
+      const response = await fetch(`${BASE_URL}/collections_update.php`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`,
+        },
+        body: JSON.stringify({ id, name, workspace_id: workspaceId }),
+      });
+      const data = await response.json();
+      if (data.success) {
+        await fetchCollections();
+      } else {
+        stableHandleError(new Error('API returned failure'), 'Failed to rename collection');
+      }
+      return data.success;
+    } catch (err) {
+      console.error('Failed to rename collection:', err);
+      setError(err);
+      stableHandleError(err, 'Failed to rename collection');
+      return false;
+    }
+  }, [token, fetchCollections, stableHandleError, workspaceId]);
+
   useEffect(() => {
     if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ')) {
       console.log('useCollectionsApi → Valid token → fetching collections');
@@ -108,5 +133,6 @@ export function useCollectionsApi(token, onShowToast, workspaceId) {
     fetchCollections,
     createCollection,
     deleteCollection,
+    renameCollection,
   };
 }

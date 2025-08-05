@@ -188,6 +188,7 @@ useEffect(() => {
   createCollection,
   deleteCollection,
   fetchCollections,
+  renameCollection,
 } = useCollectionsApi(token, setGlobalToastMessage, activeWorkspaceId);
   
 
@@ -653,12 +654,17 @@ token={token}
   onAddCollection={(name) => {
     createCollection(name);
   }}
-  onRenameCollection={(id, newName) => {
+  onRenameCollection={async (id, newName) => {
     const updated = collections.map((c) =>
       c.id === id ? { ...c, name: newName } : c
     );
     setCollections(updated);
-    setGlobalToastMessage(`Collectie hernoemd naar "${newName}"`);
+    const success = await renameCollection(id, newName);
+    if (success) {
+      setGlobalToastMessage(`Collectie hernoemd naar "${newName}"`);
+    } else {
+      setGlobalToastMessage('Error renaming collection');
+    }
   }}
   onDeleteCollection={(id) => {
     deleteCollection(id);
