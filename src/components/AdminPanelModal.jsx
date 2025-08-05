@@ -7,8 +7,10 @@ export default function AdminPanelModal({ isOpen, onClose, token, onToast }) {
   const {
     users,
     workspaces,
+    globalStats,
     fetchUsers,
     fetchAllWorkspaces,
+    fetchGlobalStats,
     createWorkspaceForUser,
     deleteWorkspace
   } = useAdminApi(token, onToast);
@@ -20,8 +22,9 @@ export default function AdminPanelModal({ isOpen, onClose, token, onToast }) {
     if (isOpen) {
       fetchUsers();
       fetchAllWorkspaces();
+      fetchGlobalStats();
     }
-  }, [isOpen, fetchUsers, fetchAllWorkspaces]);
+  }, [isOpen, fetchUsers, fetchAllWorkspaces, fetchGlobalStats]);
 
   if (!isOpen) return null;
 
@@ -48,6 +51,71 @@ export default function AdminPanelModal({ isOpen, onClose, token, onToast }) {
         </button>
 
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h2>
+
+        {globalStats && (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-800">
+              <div className="text-sm text-gray-500">Total personas</div>
+              <div className="text-xl font-semibold">{globalStats.total_personas}</div>
+            </div>
+            <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-800">
+              <div className="text-sm text-gray-500">Total prompts</div>
+              <div className="text-xl font-semibold">{globalStats.total_prompts}</div>
+            </div>
+            <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-800">
+              <div className="text-sm text-gray-500">Avg. prompts per persona</div>
+              <div className="text-xl font-semibold">
+                {globalStats.average_prompts_per_persona.toFixed(2)}
+              </div>
+            </div>
+            {globalStats.most_active_workspace && (
+              <div className="p-4 rounded-lg bg-gray-100 dark:bg-gray-800">
+                <div className="text-sm text-gray-500">Most active workspace</div>
+                <div className="text-xl font-semibold">
+                  {globalStats.most_active_workspace.name}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Users stats */}
+        <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+          <h3 className="text-lg font-semibold mb-2">User statistics</h3>
+          <div className="max-h-64 overflow-y-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="text-left text-gray-500">
+                  <th className="px-2 py-1">User</th>
+                  <th className="px-2 py-1">Personas</th>
+                  <th className="px-2 py-1">Prompts</th>
+                  <th className="px-2 py-1">Collections</th>
+                  <th className="px-2 py-1">Workspaces</th>
+                  <th className="px-2 py-1">Admin</th>
+                </tr>
+              </thead>
+              <tbody>
+                {users.map((u) => (
+                  <tr key={u.id} className="border-t border-gray-200 dark:border-gray-700">
+                    <td className="px-2 py-1">{u.username}</td>
+                    <td className="px-2 py-1">{u.persona_count}</td>
+                    <td className="px-2 py-1">{u.prompt_count}</td>
+                    <td className="px-2 py-1">{u.collection_count}</td>
+                    <td className="px-2 py-1">{u.workspace_count}</td>
+                    <td className="px-2 py-1">{u.is_admin ? 'Yes' : 'No'}</td>
+                  </tr>
+                ))}
+                {users.length === 0 && (
+                  <tr>
+                    <td className="px-2 py-1 text-gray-500" colSpan="6">
+                      No users found
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </div>
 
         {/* Create workspace */}
         <div className="space-y-2">

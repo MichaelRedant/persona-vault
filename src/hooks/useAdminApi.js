@@ -3,6 +3,7 @@ import { useCallback, useState } from 'react';
 export function useAdminApi(token, onToast) {
   const [users, setUsers] = useState([]);
   const [workspaces, setWorkspaces] = useState([]);
+  const [globalStats, setGlobalStats] = useState(null);
 
   const baseUrl = import.meta.env.VITE_API_BASE_URL;
 
@@ -80,11 +81,31 @@ export function useAdminApi(token, onToast) {
     }
   }, [baseUrl, token, fetchAllWorkspaces, onToast]);
 
+  const fetchGlobalStats = useCallback(async () => {
+    try {
+      const res = await fetch(`${baseUrl}/admin_stats_global.php`, {
+        headers: {
+          Authorization: `Bearer ${token}`
+        }
+      });
+      const data = await res.json();
+      if (!data.success) throw new Error(data.message || 'Failed to fetch stats');
+      setGlobalStats(data.stats);
+      return data.stats;
+    } catch (err) {
+      onToast?.('Error fetching stats');
+      console.error(err);
+      return null;
+    }
+  }, [baseUrl, token, onToast]);
+
   return {
     users,
     workspaces,
+    globalStats,
     fetchUsers,
     fetchAllWorkspaces,
+    fetchGlobalStats,
     createWorkspaceForUser,
     deleteWorkspace
   };
