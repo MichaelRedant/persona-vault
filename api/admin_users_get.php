@@ -6,6 +6,16 @@ require 'auth_check_admin.php';
 header('Content-Type: application/json');
 
 try {
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS user_sessions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            login_time DATETIME NOT NULL,
+            logout_time DATETIME DEFAULT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )"
+    );
+
     $stmt = $pdo->query("SELECT id, username, email, is_admin FROM users ORDER BY username ASC");
     $users = $stmt->fetchAll(PDO::FETCH_ASSOC);
 

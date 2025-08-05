@@ -54,12 +54,23 @@ if (!$workspaceId) {
 
 // Log login time for user session tracking
 try {
+
+    $pdo->exec(
+        "CREATE TABLE IF NOT EXISTS user_sessions (
+            id INT AUTO_INCREMENT PRIMARY KEY,
+            user_id INT NOT NULL,
+            login_time DATETIME NOT NULL,
+            logout_time DATETIME DEFAULT NULL,
+            FOREIGN KEY (user_id) REFERENCES users(id)
+        )"
+    );
+
     $sessionStmt = $pdo->prepare("INSERT INTO user_sessions (user_id, login_time) VALUES (?, NOW())");
     $sessionStmt->execute([$user['id']]);
 } catch (PDOException $e) {
-    http_response_code(500);
-    echo json_encode(['error' => 'Failed to log session']);
-    exit;
+    // If session logging fails, continue without blocking login
+    error_log('Session log failed: ' . $e->getMessage());
+
 }
 
 // ✅ JWT genereren (met admin-info)
