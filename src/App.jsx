@@ -21,6 +21,7 @@ import FloatingInstallBanner from './components/FloatingInstallBanner';
 import TagFilterDropdown from './components/TagFilterDropdown';
 import QuickTitlesDropdown from './components/QuickTitlesDropdown.jsx';
 import ScrollToTopButton from './components/ScrollToTopButton';
+import AdminPanelModal from './components/AdminPanelModal';
 import CollectionDashboard from './pages/CollectionDashboard';
 import CollectionPage from './pages/CollectionPage';
 import Modal from './components/Modal';
@@ -41,6 +42,8 @@ function App() {
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [editingPersona, setEditingPersona] = useState(null);
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
+  const [isAdminPanelOpen, setIsAdminPanelOpen] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [activeCollectionId, setActiveCollectionId] = useState(() => {
   const storedId = localStorage.getItem('vault_activeCollectionId');
   
@@ -194,6 +197,7 @@ useEffect(() => {
       const decoded = jwtDecode(token);
       setDecodedToken(decoded);
       setUsername(decoded.username || decoded.email || 'User');
+      setIsAdmin(!!decoded.is_admin);
 
       if (!activeWorkspaceId && decoded.workspace_id) {
         setActiveWorkspaceId(decoded.workspace_id);
@@ -360,10 +364,12 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
   onOpenProfile={() => setIsProfileModalOpen(true)}
   createPersona={createPersona} // ✅ toevoegen
   createPrompt={createPrompt}   // ✅ toevoegen
-  deletePersona={deletePersona}    // ✅ toevoegen
-  deletePrompt={deletePrompt} 
-  handleUpdateTags={handleUpdateTags}
-  
+    deletePersona={deletePersona}    // ✅ toevoegen
+    deletePrompt={deletePrompt}
+    handleUpdateTags={handleUpdateTags}
+    isAdmin={isAdmin}
+    onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+
 />
 
 {workspaces.length > 0 && (
@@ -706,6 +712,15 @@ token={token}
     onClose={() => setIsSettingsModalOpen(false)}
     compactMode={compactMode}
     setCompactMode={setCompactMode}
+  />
+)}
+
+{isAdminPanelOpen && (
+  <AdminPanelModal
+    isOpen={isAdminPanelOpen}
+    onClose={() => setIsAdminPanelOpen(false)}
+    token={token}
+    onToast={setGlobalToastMessage}
   />
 )}
 

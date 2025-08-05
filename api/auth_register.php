@@ -42,8 +42,8 @@ if ($stmt->fetch()) {
 // Hash password
 $password_hash = password_hash($password, PASSWORD_DEFAULT);
 
-// Insert user
-$stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash) VALUES (?, ?, ?)");
+// Insert user (default not admin)
+$stmt = $pdo->prepare("INSERT INTO users (username, email, password_hash, is_admin) VALUES (?, ?, ?, 0)");
 $stmt->execute([$username, $email, $password_hash]);
 
 $user_id = $pdo->lastInsertId();
@@ -61,7 +61,8 @@ $memberStmt->execute([$workspaceId, $user_id]);
 $token = generate_jwt([
     'user_id' => $user_id,
     'username' => $username,
-    'workspace_id' => $workspaceId
+    'workspace_id' => $workspaceId,
+    'is_admin' => 0
 ], 3600 * 24 * 7);
 
 echo json_encode(['success' => true, 'token' => $token]);
