@@ -7,6 +7,7 @@ import FavoritesFilter from './components/FavoritesFilter';
 import Header from './components/Header';
 import Toast from './components/Toast';
 import { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { usePersonasApi } from './hooks/usePersonasApi';
 import { usePromptsApi } from './hooks/usePromptsApi';
 import { useCollectionsApi } from './hooks/useCollectionsApi';
@@ -258,7 +259,18 @@ useEffect(() => {
 }, [activeCollectionId]);
 
 
-  const [authTab, setAuthTab] = useState('login');
+  const location = useLocation();
+  const [authTab, setAuthTab] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    return params.get('register') ? 'register' : 'login';
+  });
+
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    if (params.get('register')) {
+      setAuthTab('register');
+    }
+  }, [location.search]);
 
   if (!token) {
     return (
