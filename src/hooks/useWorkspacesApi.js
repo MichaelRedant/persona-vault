@@ -21,10 +21,12 @@ export function useWorkspacesApi(token, onToast) {
       if (!result.success) throw new Error(result.message || 'Failed to fetch workspaces');
 
       setWorkspaces(result.workspaces);
+      return result.workspaces;
     } catch (err) {
       setError(err.message);
       onToast?.('Error fetching workspaces');
       console.error(err);
+      return [];
     } finally {
       setLoading(false);
     }

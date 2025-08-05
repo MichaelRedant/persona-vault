@@ -127,19 +127,21 @@ const {
 useEffect(() => {
   if (!token) return;
 
-  fetchWorkspaces().then(() => {
+  (async () => {
+    const fetched = await fetchWorkspaces();
     const storedWorkspaceId = localStorage.getItem('vault_activeWorkspaceId');
-    const validStoredId = storedWorkspaceId && workspaces.some(w => w.id === parseInt(storedWorkspaceId, 10));
+    const validStoredId =
+      storedWorkspaceId && fetched.some(w => w.id === parseInt(storedWorkspaceId, 10));
 
     if (validStoredId) {
       setActiveWorkspaceId(parseInt(storedWorkspaceId, 10));
-    } else if (workspaces.length > 0) {
-      const fallbackId = workspaces[0].id;
+    } else if (fetched.length > 0) {
+      const fallbackId = fetched[0].id;
       setActiveWorkspaceId(fallbackId);
       localStorage.setItem('vault_activeWorkspaceId', fallbackId);
     }
-  });
-}, [token, fetchWorkspaces, workspaces]);
+  })();
+}, [token, fetchWorkspaces]);
 
 
 
