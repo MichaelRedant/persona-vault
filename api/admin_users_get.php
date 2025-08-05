@@ -28,6 +28,13 @@ try {
         $workspaceCount->execute([$user_id]);
         $user['workspace_count'] = (int)$workspaceCount->fetchColumn();
 
+        // Login frequency and session duration
+        $sessionStats = $pdo->prepare("SELECT COUNT(*) AS login_count, AVG(TIMESTAMPDIFF(MINUTE, login_time, IFNULL(logout_time, NOW()))) AS avg_minutes FROM user_sessions WHERE user_id = ?");
+        $sessionStats->execute([$user_id]);
+        $stats = $sessionStats->fetch(PDO::FETCH_ASSOC);
+        $user['login_count'] = (int)($stats['login_count'] ?? 0);
+        $user['avg_session_minutes'] = $stats['avg_minutes'] !== null ? (float)$stats['avg_minutes'] : 0;
+
         $user['is_admin'] = (bool)$user['is_admin'];
     }
 
