@@ -76,7 +76,7 @@ export default function Header({
   return (
     <>
       <header className="sticky top-0 z-50 backdrop-blur-md bg-gray-100/70 dark:bg-gray-900/70 border-b border-gray-200 dark:border-gray-700 shadow-sm">
-        <div className="flex items-center justify-between max-w-5xl mx-auto px-4 h-16">
+        <div className="flex items-center justify-between max-w-screen-xl mx-auto px-2 sm:px-4 h-16">
           {/* Logo */}
           <div className="flex items-center space-x-3">
             <img src={logoLight} alt="Persona Vault Logo" className="h-12 w-auto block dark:hidden" />

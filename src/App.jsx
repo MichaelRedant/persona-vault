@@ -388,7 +388,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 />
 
 {workspaces.length > 0 && (
-  <div className="max-w-5xl mx-auto mb-2 mt-4 flex justify-between items-center">
+  <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-2 mt-4 flex justify-between items-center">
     <div className="flex items-center space-x-2 text-sm">
       <label htmlFor="workspaceSelect" className="text-gray-700 dark:text-gray-300 font-medium">
         Workspace:
@@ -439,7 +439,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 
 
 
-      <div className="max-w-5xl mx-auto mb-4 mt-6">
+      <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-4 mt-6">
         <FavoritesFilter
           showFavoritesOnly={showFavoritesOnly}
           onToggleFavorites={setShowFavoritesOnly}
@@ -447,7 +447,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
         />
       </div>
 
-      <div className="max-w-5xl mx-auto mb-4 flex flex-wrap gap-2 items-center">
+      <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-4 flex flex-wrap gap-2 items-center">
   <TagFilterDropdown
     tags={[...personas.map((p) => p.tags || []), ...prompts.map((p) => p.tags || [])]}
     activeTags={activeTags}
@@ -462,7 +462,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 </div>
 
 
-     <div className="max-w-5xl mx-auto mb-8 mt-4">
+     <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-8 mt-4">
   <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
     {[
       { id: 'personas', label: 'Personas' },
@@ -565,7 +565,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 
 ) : (
   // Normal Dashboards wrapper
-  <div className="max-w-5xl mx-auto mb-16">
+  <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-16">
     {/* Persona Dashboard */}
     <div className={`${selectedTab === 'personas' ? 'block' : 'hidden'}`}>
       <div className="flex flex-wrap justify-between items-center gap-y-2 mb-4">
