@@ -1,7 +1,7 @@
 import Modal from './Modal';
 import Button from './Button';
 import { diffWords } from 'diff';
-import { useMemo, useState } from 'react';
+import { useState } from 'react';
 
 // 🔒 HTML-stripping helper
 const stripHtml = (html) => {

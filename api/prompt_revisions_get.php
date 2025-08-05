@@ -1,28 +1,10 @@
 <?php
 require 'cors.php';
 require 'db.php';
-require_once 'jwt_utils.php';
+require_once 'auth_check.php'; // ✅ haalt $user_id en $workspace_id uit JWT
 
 header('Content-Type: application/json');
 
-// ✅ Auth check
-$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Missing or invalid Authorization header']);
-    exit;
-}
-
-$jwt = $matches[1];
-$decoded = validate_jwt($jwt);
-
-if (!$decoded || !isset($decoded['user_id'])) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Invalid or expired token']);
-    exit;
-}
-
-$user_id = $decoded['user_id'];
 $promptId = isset($_GET['prompt_id']) ? (int) $_GET['prompt_id'] : 0;
 
 if ($promptId <= 0) {
@@ -32,14 +14,18 @@ if ($promptId <= 0) {
 }
 
 try {
-    // ✅ Check of prompt eigendom is van gebruiker
-    $checkStmt = $pdo->prepare("SELECT COUNT(*) FROM prompts WHERE id = ? AND user_id = ?");
-    $checkStmt->execute([$promptId, $user_id]);
+    // ✅ Check of prompt eigendom is van gebruiker én binnen juiste workspace valt
+    $checkStmt = $pdo->prepare("
+        SELECT COUNT(*) 
+        FROM prompts 
+        WHERE id = ? AND user_id = ? AND workspace_id = ?
+    ");
+    $checkStmt->execute([$promptId, $user_id, $workspace_id]);
     $isOwner = $checkStmt->fetchColumn();
 
     if (!$isOwner) {
         http_response_code(403);
-        echo json_encode(['error' => 'Forbidden: not owner of prompt']);
+        echo json_encode(['error' => 'Forbidden: not owner or outside workspace']);
         exit;
     }
 

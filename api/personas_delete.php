@@ -1,31 +1,24 @@
 <?php
 header('Content-Type: application/json');
-include 'cors.php';
-include 'db.php';
+require 'cors.php';
+require 'auth_check.php'; // ✅ haalt $user_id en $workspace_id op
+require 'db.php';
 
-include 'jwt_utils.php';
+$id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
-$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Missing or invalid Authorization header']);
+if ($id <= 0) {
+    http_response_code(400);
+    echo json_encode(['error' => 'Missing or invalid persona ID']);
     exit;
 }
 
-$jwt = $matches[1];
-$decoded = validate_jwt($jwt); 
+try {
+    // ✅ Delete alleen als persona bij gebruiker EN workspace hoort
+    $stmt = $pdo->prepare("DELETE FROM personas WHERE id = ? AND user_id = ? AND workspace_id = ?");
+    $stmt->execute([$id, $user_id, $workspace_id]);
 
-if (!$decoded) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Invalid or expired token']);
-    exit;
+    echo json_encode(['success' => true]);
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
 }
-
-$user_id = $decoded['user_id'] ?? null;
-
-$id = $_GET['id'] ?? 0;
-
-$stmt = $pdo->prepare("DELETE FROM personas WHERE id = ? AND user_id = ?");
-$stmt->execute([$id, $user_id]);
-
-echo json_encode(['success' => true]);

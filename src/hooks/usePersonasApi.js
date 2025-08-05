@@ -3,7 +3,7 @@ import { useApiErrorHandler } from './useApiErrorHandler';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
 
-export function usePersonasApi(token, onShowToast) {
+export function usePersonasApi(token, onShowToast, workspaceId) {
   const [personas, setPersonas] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -21,9 +21,9 @@ export function usePersonasApi(token, onShowToast) {
   }));
 
   const fetchPersonas = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${BASE_URL}/personas_get.php`, {
+  setLoading(true);
+  try {
+    const response = await fetch(`${BASE_URL}/personas_get.php?workspace_id=${workspaceId}`, {
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -46,7 +46,7 @@ export function usePersonasApi(token, onShowToast) {
     } finally {
       setLoading(false);
     }
-  }, [handleError, token]);
+  }, [handleError, token, workspaceId]);
 
   const createPersona = async (name, description, tags = [], collectionIds = []) => {
   try {
@@ -56,7 +56,7 @@ export function usePersonasApi(token, onShowToast) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ name, description, tags, collection_ids: collectionIds })
+      body: JSON.stringify({ name, description, tags, collection_ids: collectionIds, workspace_id: workspaceId })
     });
 
     const data = await response.json();
@@ -85,7 +85,7 @@ export function usePersonasApi(token, onShowToast) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ id })
+      body: JSON.stringify({ id, workspace_id: workspaceId })
     });
     
 
@@ -96,7 +96,7 @@ export function usePersonasApi(token, onShowToast) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ id, name, description, tags, collectionIds }),
+      body: JSON.stringify({ id, name, description, tags, collectionIds, workspace_id: workspaceId  }),
     });
     
 
@@ -123,7 +123,7 @@ export function usePersonasApi(token, onShowToast) {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ id, favorite }),
+      body: JSON.stringify({ id, favorite, workspace_id: workspaceId  }),
     });
     const data = await response.json();
     if (data.success) {
@@ -159,7 +159,7 @@ const removePersonaFromCollection = async (personaId, collectionId) => {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`,
       },
-      body: JSON.stringify({ personaId, collectionId }),
+      body: JSON.stringify({ personaId, collectionId, workspace_id: workspaceId }),
     });
     const data = await response.json();
     if (data.success) {
@@ -177,7 +177,8 @@ const removePersonaFromCollection = async (personaId, collectionId) => {
 
   const deletePersona = async (id) => {
     try {
-      const response = await fetch(`${BASE_URL}/personas_delete.php?id=${id}`, {
+      const response = await fetch(`${BASE_URL}/personas_delete.php?id=${id}&workspace_id=${workspaceId}`, {
+
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -203,7 +204,8 @@ const removePersonaFromCollection = async (personaId, collectionId) => {
   } else {
     console.log('usePersonasApi → No valid token → skipping personas fetch');
   }
-}, [fetchPersonas, token]);
+}, [fetchPersonas, token, workspaceId]);
+
 
 
   

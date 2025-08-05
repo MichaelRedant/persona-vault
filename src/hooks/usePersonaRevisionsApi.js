@@ -2,14 +2,14 @@ import { useState, useCallback } from 'react';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
 
-export function usePersonaRevisionsApi(token) {
+export function usePersonaRevisionsApi(token, workspaceId) {
   const [revisions, setRevisions] = useState([]);
   const [loading, setLoading] = useState(false);
 
   const fetchRevisions = useCallback(async (personaId) => {
     setLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/persona_get_revisions.php?persona_id=${personaId}`, {
+      const response = await fetch(`${BASE_URL}/persona_get_revisions.php?persona_id=${personaId}&workspace_id=${workspaceId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -30,7 +30,7 @@ export function usePersonaRevisionsApi(token) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, workspaceId]);
 
   return { revisions, loading, fetchRevisions };
 }

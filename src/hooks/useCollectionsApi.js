@@ -3,7 +3,7 @@ import { useApiErrorHandler } from './useApiErrorHandler';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
 
-export function useCollectionsApi(token, onShowToast) {
+export function useCollectionsApi(token, onShowToast, workspaceId) {
   const [collections, setCollections] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -18,7 +18,8 @@ export function useCollectionsApi(token, onShowToast) {
   const fetchCollections = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await fetch(`${BASE_URL}/collections_get.php`, {
+      const response = await fetch(`${BASE_URL}/collections_get.php?workspace_id=${workspaceId}`, {
+
         method: 'GET',
         headers: {
           'Content-Type': 'application/json',
@@ -42,7 +43,7 @@ export function useCollectionsApi(token, onShowToast) {
     } finally {
       setLoading(false);
     }
-  }, [token, stableHandleError]);
+  }, [token, stableHandleError, workspaceId]);
 
   const createCollection = useCallback(async (name) => {
     try {
@@ -52,7 +53,8 @@ export function useCollectionsApi(token, onShowToast) {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`,
         },
-        body: JSON.stringify({ name }),
+        body: JSON.stringify({ name, workspace_id: workspaceId }),
+
       });
       const data = await response.json();
       if (data.success) {
@@ -65,11 +67,12 @@ export function useCollectionsApi(token, onShowToast) {
       setError(err);
       stableHandleError(err, 'Failed to create collection');
     }
-  }, [token, fetchCollections, stableHandleError]);
+  }, [token, fetchCollections, stableHandleError, workspaceId]);
 
   const deleteCollection = useCallback(async (id) => {
     try {
-      const response = await fetch(`${BASE_URL}/collections_delete.php?id=${id}`, {
+      const response = await fetch(`${BASE_URL}/collections_delete.php?id=${id}&workspace_id=${workspaceId}`, {
+
         method: 'DELETE',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -86,7 +89,7 @@ export function useCollectionsApi(token, onShowToast) {
       setError(err);
       stableHandleError(err, 'Failed to delete collection');
     }
-  }, [token, fetchCollections, stableHandleError]);
+  }, [token, fetchCollections, stableHandleError, workspaceId]);
 
   useEffect(() => {
     if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ')) {

@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/exhaustive-deps */
 import PersonaDashboard from './components/PersonaDashboard';
 import PromptDashboard from './components/PromptDashboard';
 import TagsFilter from './components/TagsFilter';
@@ -26,6 +27,7 @@ import Modal from './components/Modal';
 import PersonaForm from './components/PersonaForm';
 import './index.css';
 import { testTokenValid } from './utils/tokenChecker';
+import { useWorkspacesApi } from './hooks/useWorkspacesApi';
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -41,6 +43,7 @@ function App() {
   const [isPersonaModalOpen, setIsPersonaModalOpen] = useState(false);
   const [activeCollectionId, setActiveCollectionId] = useState(() => {
   const storedId = localStorage.getItem('vault_activeCollectionId');
+  
 
 
   return storedId ? Number(storedId) : null;
@@ -108,10 +111,42 @@ useEffect(() => {
   };
 }, []);
 
+const [activeWorkspaceId, setActiveWorkspaceId] = useState(() => {
+  const fromStorage = localStorage.getItem('vault_activeWorkspaceId');
+  return fromStorage ? parseInt(fromStorage, 10) : null;
+});
+const [token, setToken] = useState(() => localStorage.getItem('vault_jwt_token') || null);
+
+const {
+  workspaces,
+  fetchWorkspaces,
+  createWorkspace,
+  // loading: loadingWorkspaces
+} = useWorkspacesApi(token, setGlobalToastMessage);
+
+useEffect(() => {
+  if (!token) return;
+
+  fetchWorkspaces().then(() => {
+    const storedWorkspaceId = localStorage.getItem('vault_activeWorkspaceId');
+    const validStoredId = storedWorkspaceId && workspaces.some(w => w.id === parseInt(storedWorkspaceId, 10));
+
+    if (validStoredId) {
+      setActiveWorkspaceId(parseInt(storedWorkspaceId, 10));
+    } else if (workspaces.length > 0) {
+      const fallbackId = workspaces[0].id;
+      setActiveWorkspaceId(fallbackId);
+      localStorage.setItem('vault_activeWorkspaceId', fallbackId);
+    }
+  });
+}, [token, fetchWorkspaces, workspaces]);
 
 
-  const [token, setToken] = useState(() => localStorage.getItem('vault_jwt_token') || null);
+
+
+  
   const [decodedToken, setDecodedToken] = useState(null);
+  
   // 🚀 NEW → Username state
   const [username, setUsername] = useState('');
 
@@ -126,7 +161,7 @@ useEffect(() => {
     deletePersona,
     updatePersonaFavorite,
     removePersonaFromCollection,
-  } = usePersonasApi(token, setGlobalToastMessage);
+  } = usePersonasApi(token, setGlobalToastMessage, activeWorkspaceId);
 
   const {
     prompts,
@@ -138,7 +173,7 @@ useEffect(() => {
     updatePrompt,
     deletePrompt,
     updatePromptFavorite
-  } = usePromptsApi(token, setGlobalToastMessage);
+  } = usePromptsApi(token, setGlobalToastMessage, activeWorkspaceId);
 
   const {
   collections,
@@ -148,39 +183,36 @@ useEffect(() => {
   createCollection,
   deleteCollection,
   fetchCollections,
-} = useCollectionsApi(token, setGlobalToastMessage);
+} = useCollectionsApi(token, setGlobalToastMessage, activeWorkspaceId);
   
 
-  useEffect(() => {
-    console.log('TOKEN IN APP:', token);
+useEffect(() => {
+  if (token) {
+    try {
+      const decoded = jwtDecode(token);
+      setDecodedToken(decoded);
+      setUsername(decoded.username || decoded.email || 'User');
 
-    if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ')) {
-      console.log('✅ Valid token → fetching data...');
+      if (!activeWorkspaceId && decoded.workspace_id) {
+        setActiveWorkspaceId(decoded.workspace_id);
+        localStorage.setItem('vault_activeWorkspaceId', decoded.workspace_id);
+      }
 
-      try {
-  const decoded = jwtDecode(token);
-  setDecodedToken(decoded);
-  setUsername(decoded.username || decoded.email || 'User');
-} catch (err) {
-  console.error('Invalid token:', err); // ← nu err gebruikt
-  setDecodedToken(null);
-  setUsername('');
-}
+      console.log('✅ JWT Decoded:', decoded);
+      console.log('✅ workspaceId from token:', decoded.workspace_id);
+      console.log('✅ activeWorkspaceId in state:', activeWorkspaceId); // <- voeg deze toe
 
-
-
-      fetchPersonas().then(() => {
-      setTimeout(() => {
-        console.log('📦 personas after fetch →', personas);
-      }, 500); // even kleine delay om zeker te zijn dat state is geüpdatet
-    });
+      fetchPersonas();
       fetchPrompts();
       fetchCollections();
-    } else {
-      console.log('⛔️ No valid token yet → skipping fetch.');
-      setUsername('');
+    } catch (err) {
+      console.error('❌ Error decoding token or fetching data:', err);
+      setGlobalToastMessage('Error during token processing.');
     }
-  }, [token, fetchPersonas, fetchCollections, fetchPrompts]);
+  }
+}, [token, fetchPersonas, fetchCollections, fetchPrompts]);
+
+
 
   const personaCount = personas.length;
   const promptCount = prompts.length;
@@ -191,6 +223,7 @@ useEffect(() => {
   p.collection_ids.map(Number).includes(Number(col.id))
 ).length,
 }));
+
   useEffect(() => {
   const displayUsername = username ? `${username}'s Vault` : 'Persona Vault';
   document.title = `${displayUsername} (${personaCount} Personas | ${promptCount} Prompts)`;
@@ -330,6 +363,52 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
   handleUpdateTags={handleUpdateTags}
   
 />
+
+{workspaces.length > 0 && (
+  <div className="max-w-5xl mx-auto mb-2 flex justify-between items-center">
+    <div className="flex items-center space-x-2 text-sm">
+      <label htmlFor="workspaceSelect" className="text-gray-700 dark:text-gray-300 font-medium">
+        Workspace:
+      </label>
+      <select
+        id="workspaceSelect"
+        className="px-2 py-1 rounded border bg-white dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600"
+        value={activeWorkspaceId || ''}
+        onChange={(e) => {
+          const newId = parseInt(e.target.value, 10);
+          setActiveWorkspaceId(newId);
+          localStorage.setItem('vault_activeWorkspaceId', newId);
+          setGlobalToastMessage('Switched workspace!');
+          fetchPersonas();
+          fetchPrompts();
+          fetchCollections();
+        }}
+      >
+        {workspaces.map((ws) => (
+          <option key={ws.id} value={ws.id}>
+            {ws.name}
+          </option>
+        ))}
+      </select>
+    </div>
+
+    <button
+      className="ml-4 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-all"
+      onClick={() => {
+        const name = prompt('Geef een naam voor je nieuwe workspace:');
+        if (name && name.trim().length > 1) {
+          createWorkspace(name.trim()).then(() => {
+            setGlobalToastMessage(`Nieuwe workspace "${name}" aangemaakt!`);
+            fetchWorkspaces();
+          });
+        }
+      }}
+    >
+      + Nieuwe Workspace
+    </button>
+  </div>
+)}
+
 
 
       <div className="max-w-5xl mx-auto mb-4 mt-6">

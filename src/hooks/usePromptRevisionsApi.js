@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
 
-export function usePromptRevisionsApi(token) {
+export function usePromptRevisionsApi(token, workspaceId) {
   const [revisions, setRevisions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -18,7 +18,7 @@ export function usePromptRevisionsApi(token) {
     setError(null);
 
     try {
-      const response = await fetch(`${BASE_URL}/prompt_revisions_get.php?prompt_id=${promptId}`, {
+      const response = await fetch(`${BASE_URL}/prompt_revisions_get.php?prompt_id=${promptId}&workspace_id=${workspaceId}`, {
         headers: {
           Authorization: `Bearer ${token}`,
         },
@@ -42,7 +42,7 @@ export function usePromptRevisionsApi(token) {
     } finally {
       setLoading(false);
     }
-  }, [token]);
+  }, [token, workspaceId]);
 
   return { revisions, loading, error, fetchRevisions };
 }

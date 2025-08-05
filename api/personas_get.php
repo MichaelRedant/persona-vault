@@ -1,32 +1,8 @@
 <?php
 header('Content-Type: application/json');
 include 'cors.php';
+require 'auth_check.php'; // ✅ haalt $user_id & $workspace_id op
 include 'db.php';
-require_once 'jwt_utils.php';
-
-// ✅ Auth header check
-$authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-if (!preg_match('/Bearer\s(\S+)/', $authHeader, $matches)) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Missing or invalid Authorization header']);
-    exit;
-}
-
-$jwt = $matches[1];
-$decoded = validate_jwt($jwt);
-
-if (!$decoded) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Invalid or expired token']);
-    exit;
-}
-
-$user_id = $decoded['user_id'] ?? null;
-if (!$user_id) {
-    http_response_code(401);
-    echo json_encode(['error' => 'Token missing user_id']);
-    exit;
-}
 
 try {
     // ✅ Gebruik LEFT JOIN om persona's zonder collecties ook te tonen
@@ -37,10 +13,10 @@ try {
             pc.collection_id
         FROM personas p
         LEFT JOIN persona_collections pc ON p.id = pc.persona_id
-        WHERE p.user_id = ?
+        WHERE p.user_id = ? AND p.workspace_id = ?
         ORDER BY p.created_at DESC
     ");
-    $stmt->execute([$user_id]);
+    $stmt->execute([$user_id, $workspace_id]);
     $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
     // ✅ Groepeer per persona met alle bijhorende collection_ids[]
@@ -64,10 +40,9 @@ try {
         }
 
         if (!is_null($row['collection_id'])) {
-    $personasMap[$id]['collection_ids'][] = (int)$row['collection_id'];
-    $personasMap[$id]['collection_ids'] = array_unique($personasMap[$id]['collection_ids']);
-}
-
+            $personasMap[$id]['collection_ids'][] = (int)$row['collection_id'];
+            $personasMap[$id]['collection_ids'] = array_unique($personasMap[$id]['collection_ids']);
+        }
     }
 
     // ✅ Converteer map naar array en geef terug als JSON

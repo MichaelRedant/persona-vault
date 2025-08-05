@@ -6,7 +6,7 @@ require_once 'config.php';
 require_once 'jwt_utils.php';
 
 $JWT_SECRET = JWT_SECRET;
-// Handle preflight request
+
 if (!$JWT_SECRET) {
     http_response_code(500);
     echo json_encode(['error' => 'JWT secret not configured']);
@@ -14,7 +14,6 @@ if (!$JWT_SECRET) {
 }
 
 $data = json_decode(file_get_contents('php://input'), true);
-
 $email = trim($data['email'] ?? '');
 $password = $data['password'] ?? '';
 
@@ -24,7 +23,7 @@ if (!$email || !$password) {
     exit;
 }
 
-// Get user
+// User ophalen
 $stmt = $pdo->prepare("SELECT id, username, password_hash FROM users WHERE email = ? OR username = ?");
 $stmt->execute([$email, $email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -35,13 +34,29 @@ if (!$user || !password_verify($password, $user['password_hash'])) {
     exit;
 }
 
-// Generate JWT
+// Workspace ophalen
+$wsStmt = $pdo->prepare("
+    SELECT w.id 
+    FROM workspaces w
+    JOIN workspace_members wm ON wm.workspace_id = w.id
+    WHERE wm.user_id = ? 
+    ORDER BY w.created_at ASC 
+    LIMIT 1
+");
+$wsStmt->execute([$user['id']]);
+$workspaceId = $wsStmt->fetchColumn();
+
+if (!$workspaceId) {
+    http_response_code(500);
+    echo json_encode(['error' => 'No workspace found for user']);
+    exit;
+}
+
+// ✅ JWT genereren
 $token = generate_jwt([
-  'user_id' => $user['id'],
-  'username' => $user['username']
+    'user_id' => $user['id'],
+    'username' => $user['username'],
+    'workspace_id' => $workspaceId
 ], 3600 * 24 * 7);
 
-
-
 echo json_encode(['success' => true, 'token' => trim($token)]);
-
