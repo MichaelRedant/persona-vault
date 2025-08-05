@@ -4,7 +4,7 @@ import DarkModeSwitch from './DarkModeSwitch';
 import AboutModal from './AboutModal';
 import SearchBar from './SearchBar';
 import { HiDotsVertical } from 'react-icons/hi';
-import { FiUpload, FiDownload, FiInfo, FiSettings, FiLogOut, FiUser } from 'react-icons/fi';
+import { FiUpload, FiDownload, FiInfo, FiSettings, FiLogOut, FiUser, FiShield } from 'react-icons/fi';
 import TagManagerModal from './TagManagerModal';
 import logoLight from '/logo-light.svg';
 import logoDark from '/logo-dark.svg';
@@ -23,8 +23,10 @@ export default function Header({
   fetchPrompts,
   deletePersona,
   deletePrompt,
-  handleUpdateTags, 
-  onLogout
+  handleUpdateTags,
+  onLogout,
+  isAdmin,
+  onOpenAdminPanel
 }) {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
@@ -181,6 +183,19 @@ export default function Header({
             </button>
           )}
         </Menu.Item>
+        {isAdmin && (
+          <Menu.Item>
+            {({ active }) => (
+              <button
+                onClick={onOpenAdminPanel}
+                className={`${active ? 'bg-gray-100 dark:bg-gray-700' : ''} group flex items-center w-full px-4 py-2 text-sm`}
+              >
+                <FiShield className="mr-3 w-5 h-5" />
+                Admin Panel
+              </button>
+            )}
+          </Menu.Item>
+        )}
         <Menu.Item>
           {({ active }) => (
             <button

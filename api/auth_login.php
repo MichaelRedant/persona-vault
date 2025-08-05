@@ -23,8 +23,8 @@ if (!$email || !$password) {
     exit;
 }
 
-// User ophalen
-$stmt = $pdo->prepare("SELECT id, username, password_hash FROM users WHERE email = ? OR username = ?");
+// User ophalen (inclusief admin-flag)
+$stmt = $pdo->prepare("SELECT id, username, password_hash, is_admin FROM users WHERE email = ? OR username = ?");
 $stmt->execute([$email, $email]);
 $user = $stmt->fetch(PDO::FETCH_ASSOC);
 
@@ -52,11 +52,12 @@ if (!$workspaceId) {
     exit;
 }
 
-// ✅ JWT genereren
+// ✅ JWT genereren (met admin-info)
 $token = generate_jwt([
     'user_id' => $user['id'],
     'username' => $user['username'],
-    'workspace_id' => $workspaceId
+    'workspace_id' => $workspaceId,
+    'is_admin' => (int)$user['is_admin']
 ], 3600 * 24 * 7);
 
 echo json_encode(['success' => true, 'token' => trim($token)]);
