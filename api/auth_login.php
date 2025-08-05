@@ -53,8 +53,14 @@ if (!$workspaceId) {
 }
 
 // Log login time for user session tracking
-$sessionStmt = $pdo->prepare("INSERT INTO user_sessions (user_id, login_time) VALUES (?, NOW())");
-$sessionStmt->execute([$user['id']]);
+try {
+    $sessionStmt = $pdo->prepare("INSERT INTO user_sessions (user_id, login_time) VALUES (?, NOW())");
+    $sessionStmt->execute([$user['id']]);
+} catch (PDOException $e) {
+    http_response_code(500);
+    echo json_encode(['error' => 'Failed to log session']);
+    exit;
+}
 
 // ✅ JWT genereren (met admin-info)
 $token = generate_jwt([
@@ -65,3 +71,5 @@ $token = generate_jwt([
 ], 3600 * 24 * 7);
 
 echo json_encode(['success' => true, 'token' => trim($token)]);
+exit;
+
