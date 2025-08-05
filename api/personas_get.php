@@ -13,7 +13,7 @@ try {
             pc.collection_id
         FROM personas p
         LEFT JOIN persona_collections pc ON p.id = pc.persona_id
-        WHERE p.user_id = ? AND p.workspace_id = ?
+        WHERE p.user_id = ? AND (p.workspace_id = ? OR p.workspace_id IS NULL)
         ORDER BY p.created_at DESC
     ");
     $stmt->execute([$user_id, $workspace_id]);
