@@ -408,16 +408,16 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
     <button
       className="ml-4 mt-2 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-all"
       onClick={() => {
-        const name = prompt('Geef een naam voor je nieuwe workspace:');
+        const name = prompt('Name your workspace:');
         if (name && name.trim().length > 1) {
           createWorkspace(name.trim()).then(() => {
-            setGlobalToastMessage(`Nieuwe workspace "${name}" aangemaakt!`);
+            setGlobalToastMessage(`New workspace "${name}" has been made!`);
             fetchWorkspaces();
           });
         }
       }}
     >
-      + Nieuwe Workspace
+      + New workspace
     </button>
   </div>
 )}
