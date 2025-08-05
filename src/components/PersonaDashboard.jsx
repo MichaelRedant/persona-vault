@@ -167,7 +167,7 @@ const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevis
   };
 
   return (
-    <div className="p-6">
+    <div className="p-4 sm:p-6">
       <div className="flex justify-end mb-6">
         <Button onClick={startCreate}>+ Add Persona</Button>
       </div>
@@ -178,23 +178,24 @@ const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevis
           <p className="text-sm">Try adjusting your search or filters.</p>
         </div>
       ) : (
-        filteredPersonas.slice(0, visibleCount).map((persona) => (
-  <PersonaCard
-    key={persona.id}
-    persona={persona}
-    collections={collections}
-    onToggleFavorite={toggleFavorite}
-    onDelete={async () => {
-      await deletePersona(persona.id);
-      await fetchPersonas();
-      onShowToast('Persona deleted.');
-    }}
-    onEdit={startEdit}
-    onShowToast={onShowToast}
-    onViewRevisions={() => openRevisionsModal(persona)}
-    
-  />
-))
+        <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {filteredPersonas.slice(0, visibleCount).map((persona) => (
+            <PersonaCard
+              key={persona.id}
+              persona={persona}
+              collections={collections}
+              onToggleFavorite={toggleFavorite}
+              onDelete={async () => {
+                await deletePersona(persona.id);
+                await fetchPersonas();
+                onShowToast('Persona deleted.');
+              }}
+              onEdit={startEdit}
+              onShowToast={onShowToast}
+              onViewRevisions={() => openRevisionsModal(persona)}
+            />
+          ))}
+        </div>
       )}
 
       {hasMore && (
