@@ -52,9 +52,7 @@ export default function RegisterForm({ onRegisterSuccess }) {
   };
 
   return (
-    <div className="max-w-md mx-auto p-6 bg-white dark:bg-gray-800 shadow rounded-lg mt-10">
-      <h2 className="text-2xl font-bold mb-4 text-center">Register</h2>
-
+    <div className="space-y-4">
       {error && <Toast message={error} onClose={() => setError(null)} />}
       {successMessage && <Toast message={successMessage} onClose={() => setSuccessMessage('')} />}
 
