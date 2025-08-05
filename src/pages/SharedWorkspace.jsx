@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+
 import { useParams, useNavigate } from 'react-router-dom';
 import Button from '../components/Button';
 import { FiUsers, FiFileText, FiCopy } from 'react-icons/fi';
@@ -6,10 +7,12 @@ import { FiUsers, FiFileText, FiCopy } from 'react-icons/fi';
 export default function SharedWorkspace() {
   const { token: shareToken } = useParams();
   const navigate = useNavigate();
+
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
 
   useEffect(() => {
+
     const jwt = localStorage.getItem('vault_jwt_token');
     if (!jwt) {
       navigate('/?register=1', { replace: true });
@@ -17,6 +20,7 @@ export default function SharedWorkspace() {
     }
 
     fetch(`${import.meta.env.VITE_API_BASE_URL}/workspaces_share_get.php?token=${shareToken}`)
+
       .then(res => res.json())
       .then(result => {
         if (result.success) {
@@ -26,6 +30,7 @@ export default function SharedWorkspace() {
         }
       })
       .catch(() => setError('Failed to load workspace'));
+
   }, [shareToken, navigate]);
 
   if (error) {
@@ -96,6 +101,7 @@ export default function SharedWorkspace() {
           )}
         </section>
       </div>
+
     </main>
   );
 }
