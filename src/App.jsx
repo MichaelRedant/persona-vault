@@ -29,6 +29,7 @@ import PersonaForm from './components/PersonaForm';
 import './index.css';
 import { testTokenValid } from './utils/tokenChecker';
 import { useWorkspacesApi } from './hooks/useWorkspacesApi';
+import { FiUsers, FiFileText, FiFolder } from 'react-icons/fi';
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -358,7 +359,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 
 
   return (
-    <main className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-500 px-2 sm:px-4">
+    <main className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-500 px-2 sm:px-4 pb-16 sm:pb-0">
 
 
       {globalToastMessage && (
@@ -462,7 +463,9 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 </div>
 
 
-     <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-8 mt-4">
+
+     <div className="hidden sm:block max-w-screen-xl mx-auto px-2 sm:px-4 mb-8 mt-4">
+
   <div className="flex flex-wrap justify-center gap-2 sm:gap-3">
     {[
       { id: 'personas', label: 'Personas' },
@@ -795,6 +798,32 @@ token={token}
   promptsCount={prompts.length}
   onOpenSettings={() => setIsSettingsModalOpen(true)}
 /> */}
+      {/* Mobile bottom navigation */}
+      <div className="fixed bottom-0 left-0 right-0 z-50 bg-white dark:bg-gray-900 border-t border-gray-200 dark:border-gray-700 sm:hidden">
+        <nav className="flex justify-around">
+          <button
+            onClick={() => setSelectedTab('personas')}
+            className={`flex flex-col items-center flex-1 py-2 ${selectedTab === 'personas' ? 'text-blue-600' : 'text-gray-600 dark:text-gray-400'}`}
+          >
+            <FiUsers className="h-6 w-6" />
+            <span className="text-xs">Personas</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab('prompts')}
+            className={`flex flex-col items-center flex-1 py-2 ${selectedTab === 'prompts' ? 'text-blue-600' : 'text-gray-600 dark:text-gray-400'}`}
+          >
+            <FiFileText className="h-6 w-6" />
+            <span className="text-xs">Prompts</span>
+          </button>
+          <button
+            onClick={() => setSelectedTab('collections')}
+            className={`flex flex-col items-center flex-1 py-2 ${selectedTab === 'collections' ? 'text-blue-600' : 'text-gray-600 dark:text-gray-400'}`}
+          >
+            <FiFolder className="h-6 w-6" />
+            <span className="text-xs">Collections</span>
+          </button>
+        </nav>
+      </div>
 <FloatingInstallBanner />
 <ScrollToTopButton />
 
