@@ -1,18 +1,12 @@
 import chatgptIcon from '../assets/icons/chatgpt.svg';
 import geminiIcon from '../assets/icons/gemini.svg';
 import copilotIcon from '../assets/icons/copilot.svg';
+import grokIcon from '../assets/icons/grok.svg';
 import chatgptWhiteIcon from '../assets/icons/chatgpt_white.svg';
 
-export default function TryInPlatformButtons({ promptText, onShowToast }) {
-  const encodedPrompt = encodeURIComponent(promptText);
-
-  const chatGptUrl = `https://chat.openai.com/?prompt=${encodedPrompt}`;
-  const copilotUrl = `https://copilot.microsoft.com/?q=${encodedPrompt}`;
-
-  // Gemini: open manually + show toast
-  const handleGeminiClick = () => {
-    onShowToast?.("Gemini does not support prefilled prompts. Please paste it manually.");
-    window.open("https://gemini.google.com/app", '_blank');
+export default function TryInPlatformButtons({ onShowToast }) {
+  const showManualToast = (platform) => {
+    onShowToast?.(`${platform} does not support prefilled prompts. Please paste it manually.`);
   };
 
   return (
@@ -21,9 +15,10 @@ export default function TryInPlatformButtons({ promptText, onShowToast }) {
       
       {/* ChatGPT */}
       <a
-        href={chatGptUrl}
+        href="https://chat.openai.com/"
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => showManualToast('ChatGPT')}
         className="flex items-center space-x-2 px-3 py-1 rounded-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
       >
         {/* ChatGPT icon normal */}
@@ -34,23 +29,39 @@ export default function TryInPlatformButtons({ promptText, onShowToast }) {
       </a>
 
       {/* Gemini */}
-      <button
-        onClick={handleGeminiClick}
+      <a
+        href="https://gemini.google.com/app"
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => showManualToast('Gemini')}
         className="flex items-center space-x-2 px-3 py-1 rounded-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
       >
         <img src={geminiIcon} alt="Gemini" className="w-5 h-5" />
         <span>Gemini</span>
-      </button>
+      </a>
 
       {/* Copilot */}
       <a
-        href={copilotUrl}
+        href="https://copilot.microsoft.com/"
         target="_blank"
         rel="noopener noreferrer"
+        onClick={() => showManualToast('Copilot')}
         className="flex items-center space-x-2 px-3 py-1 rounded-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
       >
         <img src={copilotIcon} alt="Copilot" className="w-5 h-5" />
         <span>Copilot</span>
+      </a>
+
+      {/* Grok */}
+      <a
+        href="https://grok.com"
+        target="_blank"
+        rel="noopener noreferrer"
+        onClick={() => showManualToast('Grok')}
+        className="flex items-center space-x-2 px-3 py-1 rounded-full bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 transition"
+      >
+        <img src={grokIcon} alt="Grok" className="w-5 h-5" />
+        <span>Grok</span>
       </a>
 
     </div>
