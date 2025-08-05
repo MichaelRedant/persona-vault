@@ -1,14 +1,17 @@
 import { useEffect, useState } from 'react';
+
 import { useParams, useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Button from '../components/Button';
 import Header from '../components/Header';
 import Footer from '../components/Footer';
+
 import { FiUsers, FiFileText, FiCopy } from 'react-icons/fi';
 
 export default function SharedWorkspace() {
   const { token: shareToken } = useParams();
   const navigate = useNavigate();
+
   const [data, setData] = useState(null);
   const [error, setError] = useState('');
   const [searchTerm, setSearchTerm] = useState('');
@@ -16,6 +19,7 @@ export default function SharedWorkspace() {
   const [username, setUsername] = useState('');
 
   useEffect(() => {
+
     const jwt = localStorage.getItem('vault_jwt_token');
     if (!jwt) {
       navigate('/?register=1', { replace: true });
@@ -40,12 +44,15 @@ export default function SharedWorkspace() {
         })
         .catch(() => setError('Failed to load workspace'));
     }
+
   }, [shareToken, navigate]);
 
   const handleLogout = () => {
     localStorage.removeItem('vault_jwt_token');
     navigate('/', { replace: true });
   };
+
+
 
   if (error) {
     return <div className="p-6 text-center text-red-500">{error}</div>;
@@ -174,5 +181,6 @@ export default function SharedWorkspace() {
         onOpenSettings={() => {}}
       />
     </div>
+
   );
 }

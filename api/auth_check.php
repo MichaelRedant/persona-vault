@@ -22,4 +22,19 @@ if (!$decoded || !isset($decoded['user_id']) || !isset($decoded['workspace_id'])
 }
 
 $user_id = $decoded['user_id'];
-$workspace_id = $decoded['workspace_id'];
+$workspace_id = (int)$decoded['workspace_id'];
+
+if (isset($_GET['workspace_id'])) {
+    $requestedWorkspaceId = (int)$_GET['workspace_id'];
+    if ($requestedWorkspaceId !== $workspace_id) {
+        $stmt = $pdo->prepare('SELECT 1 FROM workspaces w LEFT JOIN workspace_members wm ON w.id = wm.workspace_id WHERE w.id = ? AND (w.owner_id = ? OR wm.user_id = ?)');
+        $stmt->execute([$requestedWorkspaceId, $user_id, $user_id]);
+        if ($stmt->fetchColumn()) {
+            $workspace_id = $requestedWorkspaceId;
+        } else {
+            http_response_code(403);
+            echo json_encode(['error' => 'No access to this workspace']);
+            exit;
+        }
+    }
+}

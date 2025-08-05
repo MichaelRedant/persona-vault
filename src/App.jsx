@@ -134,16 +134,18 @@ useEffect(() => {
 
   (async () => {
     const fetched = await fetchWorkspaces();
-    const storedWorkspaceId = localStorage.getItem('vault_activeWorkspaceId');
+    const storedWorkspaceIdStr = localStorage.getItem('vault_activeWorkspaceId');
+    const storedWorkspaceId =
+      storedWorkspaceIdStr ? parseInt(storedWorkspaceIdStr, 10) : null;
     const validStoredId =
-      storedWorkspaceId && fetched.some(w => w.id === parseInt(storedWorkspaceId, 10));
+      storedWorkspaceId && fetched.some((w) => Number(w.id) === storedWorkspaceId);
 
     if (validStoredId) {
-      setActiveWorkspaceId(parseInt(storedWorkspaceId, 10));
+      setActiveWorkspaceId(storedWorkspaceId);
     } else if (fetched.length > 0) {
-      const fallbackId = fetched[0].id;
+      const fallbackId = Number(fetched[0].id);
       setActiveWorkspaceId(fallbackId);
-      localStorage.setItem('vault_activeWorkspaceId', fallbackId);
+      localStorage.setItem('vault_activeWorkspaceId', String(fallbackId));
     }
   })();
 }, [token, fetchWorkspaces]);
@@ -414,7 +416,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
           onChange={(e) => {
             const newId = parseInt(e.target.value, 10);
             setActiveWorkspaceId(newId);
-            localStorage.setItem('vault_activeWorkspaceId', newId);
+            localStorage.setItem('vault_activeWorkspaceId', String(newId));
             setGlobalToastMessage('Switched workspace!');
             fetchPersonas();
             fetchPrompts();
