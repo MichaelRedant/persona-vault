@@ -373,35 +373,40 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 />
 
 {workspaces.length > 0 && (
-  <div className="max-w-5xl mx-auto mb-2 flex justify-between items-center">
+  <div className="max-w-5xl mx-auto mb-2 mt-4 flex justify-between items-center">
     <div className="flex items-center space-x-2 text-sm">
       <label htmlFor="workspaceSelect" className="text-gray-700 dark:text-gray-300 font-medium">
         Workspace:
       </label>
-      <select
-        id="workspaceSelect"
-        className="px-2 py-1 rounded border bg-white dark:bg-gray-800 dark:text-white border-gray-300 dark:border-gray-600"
-        value={activeWorkspaceId || ''}
-        onChange={(e) => {
-          const newId = parseInt(e.target.value, 10);
-          setActiveWorkspaceId(newId);
-          localStorage.setItem('vault_activeWorkspaceId', newId);
-          setGlobalToastMessage('Switched workspace!');
-          fetchPersonas();
-          fetchPrompts();
-          fetchCollections();
-        }}
-      >
-        {workspaces.map((ws) => (
-          <option key={ws.id} value={ws.id}>
-            {ws.name}
-          </option>
-        ))}
-      </select>
+      <div className="relative">
+        <select
+          id="workspaceSelect"
+          className="appearance-none bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-full px-4 py-1.5 pr-8 text-sm text-gray-700 dark:text-gray-200 shadow-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition duration-200 ease-in-out hover:shadow-md cursor-pointer"
+          value={activeWorkspaceId || ''}
+          onChange={(e) => {
+            const newId = parseInt(e.target.value, 10);
+            setActiveWorkspaceId(newId);
+            localStorage.setItem('vault_activeWorkspaceId', newId);
+            setGlobalToastMessage('Switched workspace!');
+            fetchPersonas();
+            fetchPrompts();
+            fetchCollections();
+          }}
+        >
+          {workspaces.map((ws) => (
+            <option key={ws.id} value={ws.id}>
+              {ws.name}
+            </option>
+          ))}
+        </select>
+        <div className="pointer-events-none absolute inset-y-0 right-3 flex items-center text-gray-400 dark:text-gray-300">
+          ▼
+        </div>
+      </div>
     </div>
 
     <button
-      className="ml-4 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-all"
+      className="ml-4 mt-2 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-all"
       onClick={() => {
         const name = prompt('Geef een naam voor je nieuwe workspace:');
         if (name && name.trim().length > 1) {
