@@ -31,6 +31,7 @@ import './index.css';
 import { testTokenValid } from './utils/tokenChecker';
 import { useWorkspacesApi } from './hooks/useWorkspacesApi';
 import { FiUsers, FiFileText, FiFolder } from 'react-icons/fi';
+import Sidebar from './components/Sidebar';
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -373,14 +374,15 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 
 
   return (
-    <main className="min-h-screen bg-gray-100 dark:bg-gray-900 text-gray-900 dark:text-white transition-colors duration-500 px-2 sm:px-4 pb-16 sm:pb-0">
+      <main className="min-h-screen flex bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white transition-colors duration-500">
+        <Sidebar selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
+        <div className="flex-1 px-2 sm:px-4 pb-16 sm:pb-0">
 
-
-      {globalToastMessage && (
-        <div className="fixed top-4 right-4 z-[9999]">
-          <Toast message={globalToastMessage} onClose={() => setGlobalToastMessage('')} />
-        </div>
-      )}
+       {globalToastMessage && (
+          <div className="fixed top-4 right-4 z-[9999]">
+            <Toast message={globalToastMessage} onClose={() => setGlobalToastMessage('')} />
+          </div>
+        )}
 
       <Header
   personas={personas}
@@ -869,10 +871,10 @@ token={token}
         </nav>
       </div>
 <FloatingInstallBanner />
-<ScrollToTopButton />
-
+      <ScrollToTopButton />
+      </div>
     </main>
-  );
-}
+ );
+  }
 
 export default App;

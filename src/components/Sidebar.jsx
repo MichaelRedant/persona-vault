@@ -1,0 +1,79 @@
+// src/components/Sidebar.jsx
+
+import React, { useState } from 'react';
+import {
+  FiUsers,
+  FiFileText,
+  FiFolder,
+  FiChevronLeft,
+  FiChevronRight,
+} from 'react-icons/fi';
+
+export default function Sidebar({ selectedTab, setSelectedTab }) {
+  const [collapsed, setCollapsed] = useState(false);
+
+  const navItems = [
+    { id: 'personas', icon: FiUsers, label: 'Personas' },
+    { id: 'prompts', icon: FiFileText, label: 'Prompts' },
+    { id: 'collections', icon: FiFolder, label: 'Collections' },
+  ];
+
+  return (
+    <aside
+      className={`
+        fixed top-0 left-0 h-full
+        bg-white/70 dark:bg-gray-900/70
+        backdrop-blur-md
+        border-r border-gray-200 dark:border-gray-700
+        py-6 space-y-6
+        
+        transform transition-transform duration-300 ease-in-out
+        ${collapsed ? '-translate-x-full' : 'translate-x-0'}
+
+        z-20
+      `}
+    >
+      {/* Navigatieknoppen */}
+      <div className="flex flex-col items-center space-y-6">
+        {navItems.map(({ id, icon: Icon, label }) => {
+          const active = selectedTab === id;
+          return (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setSelectedTab(id)}
+              title={label}
+              className={`
+                p-3 rounded-xl transition-colors
+                ${active
+                  ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50'
+                  : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
+                }
+              `}
+            >
+              <Icon className="w-6 h-6" />
+            </button>
+          );
+        })}
+      </div>
+
+      {/* Collapse/Expand knop */}
+      <button
+        type="button"
+        onClick={() => setCollapsed(!collapsed)}
+        className="
+          absolute top-4 right-[-0.75rem]
+          p-1 bg-white dark:bg-gray-800
+          rounded-full shadow-md
+          focus:outline-none
+        "
+      >
+        {collapsed ? (
+          <FiChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+        ) : (
+          <FiChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+        )}
+      </button>
+    </aside>
+  );
+}
