@@ -19,9 +19,16 @@ export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen
   return (
 
     <>
+      {isOpen && (
+        <div
+          className="fixed inset-0 bg-black/40 z-10 sm:hidden"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+
       <aside
         className={`
-          fixed top-16 left-0 h-[calc(100vh-4rem)] w-20
+          fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 sm:w-20
           bg-white/70 dark:bg-gray-900/70
           backdrop-blur-md
           border-r border-gray-200 dark:border-gray-700
