@@ -23,7 +23,7 @@ const Input = forwardRef(function Input(
         onChange={onChange}
         placeholder={placeholder}
         required={required}
-        className={`p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-500 transition ${className}`}
+        className={`p-3 border border-gray-300 rounded-lg bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 transition ${className}`}
         {...props}
       />
     </div>
