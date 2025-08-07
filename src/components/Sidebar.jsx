@@ -9,6 +9,7 @@ import {
 } from 'react-icons/fi';
 
 export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen }) {
+
   const navItems = [
     { id: 'personas', icon: FiUsers, label: 'Personas' },
     { id: 'prompts', icon: FiFileText, label: 'Prompts' },
@@ -16,6 +17,7 @@ export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen
   ];
 
   return (
+
     <>
       <aside
         className={`
@@ -74,5 +76,6 @@ export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen
         />
       </button>
     </>
+
   );
 }
