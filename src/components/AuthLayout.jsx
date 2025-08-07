@@ -3,7 +3,7 @@ import darkLogo from '/logo-dark.svg';
 
 export default function AuthLayout({ children, activeTab, onTabChange }) {
   return (
-    <div className="min-h-screen grid md:grid-cols-2">
+    <div className="min-h-screen flex flex-col md:grid md:grid-cols-2">
 
       {/* —— Linkerkant: promo verticaal gecentreerd —— */}
       <div className="hidden md:flex flex-col p-12
@@ -26,10 +26,8 @@ export default function AuthLayout({ children, activeTab, onTabChange }) {
       </div>
 
       {/* —— Rechterkant: auth card —— */}
-      <div className="flex flex-col justify-center items-center
-                      p-6 bg-gray-50 dark:bg-gray-900">
-        <div className="w-full max-w-md bg-white dark:bg-gray-800
-                        rounded-3xl shadow-2xl p-10">
+      <div className="flex flex-col justify-center items-center p-4 sm:p-6 bg-gray-50 dark:bg-gray-900">
+        <div className="w-full max-w-sm sm:max-w-md bg-white dark:bg-gray-800 rounded-3xl shadow-2xl p-6 sm:p-10">
           {/* Logo + tabs + children blijven ongewijzigd */}
           <div className="mb-8 flex justify-center">
             <img src={lightLogo} alt="Persona Vault" className="h-10 dark:hidden" />
