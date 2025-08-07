@@ -47,7 +47,7 @@ export default function LoginForm({ onLoginSuccess }) {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 max-w-md mx-auto">
       {error && <Toast message={error} onClose={() => setError(null)} />}
 
       <form onSubmit={handleSubmit} className="flex flex-col space-y-5">
