@@ -73,6 +73,17 @@ function App() {
   return localStorage.getItem('vault_setting_compactMode') === 'true';
 });
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const updateSidebar = () => {
+      setIsSidebarOpen(window.innerWidth >= 640);
+    };
+    updateSidebar();
+    window.addEventListener('resize', updateSidebar);
+    return () => window.removeEventListener('resize', updateSidebar);
+  }, []);
+
 useEffect(() => {
   const token = localStorage.getItem('vault_jwt_token');
   const baseUrl = import.meta.env.VITE_API_BASE_URL;
@@ -374,8 +385,13 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 
 
   return (
-      <main className="min-h-screen flex bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 text-gray-900 dark:text-white transition-colors duration-500">
-        <Sidebar selectedTab={selectedTab} setSelectedTab={setSelectedTab} />
+      <main className="min-h-screen flex bg-gradient-to-br from-white via-blue-50 to-purple-100 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 text-gray-900 dark:text-white transition-colors duration-500">
+        <Sidebar
+          selectedTab={selectedTab}
+          setSelectedTab={setSelectedTab}
+          isOpen={isSidebarOpen}
+          setIsOpen={setIsSidebarOpen}
+        />
         <div className="flex-1 px-2 sm:px-4 pb-16 sm:pb-0">
 
        {globalToastMessage && (
@@ -385,24 +401,24 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
         )}
 
       <Header
-  personas={personas}
-  setPersonas={setPersonas}  
-  prompts={prompts}
-  setPrompts={setPrompts}
-  searchTerm={searchTerm}
-  setSearchTerm={setSearchTerm}
-  username={username}
-  onLogout={handleLogout}
-  onOpenProfile={() => setIsProfileModalOpen(true)}
-  createPersona={createPersona} // ✅ toevoegen
-  createPrompt={createPrompt}   // ✅ toevoegen
-    deletePersona={deletePersona}    // ✅ toevoegen
-    deletePrompt={deletePrompt}
-    handleUpdateTags={handleUpdateTags}
-    isAdmin={isAdmin}
-    onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
-
-/>
+        personas={personas}
+        setPersonas={setPersonas}
+        prompts={prompts}
+        setPrompts={setPrompts}
+        searchTerm={searchTerm}
+        setSearchTerm={setSearchTerm}
+        username={username}
+        onLogout={handleLogout}
+        onOpenProfile={() => setIsProfileModalOpen(true)}
+        createPersona={createPersona} // ✅ toevoegen
+        createPrompt={createPrompt}   // ✅ toevoegen
+        deletePersona={deletePersona}    // ✅ toevoegen
+        deletePrompt={deletePrompt}
+        handleUpdateTags={handleUpdateTags}
+        isAdmin={isAdmin}
+        onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
+        onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
+      />
 
 {workspaces.length > 0 && (
   <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-2 mt-4 flex justify-between items-center">
