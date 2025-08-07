@@ -32,6 +32,7 @@ import { testTokenValid } from './utils/tokenChecker';
 import { useWorkspacesApi } from './hooks/useWorkspacesApi';
 import { FiUsers, FiFileText, FiFolder } from 'react-icons/fi';
 import Sidebar from './components/Sidebar';
+import SearchBar from './components/SearchBar';
 
 function App() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -419,6 +420,10 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
         onOpenAdminPanel={() => setIsAdminPanelOpen(true)}
         onToggleSidebar={() => setIsSidebarOpen((prev) => !prev)}
       />
+
+      <div className="px-2 sm:px-4 mt-2 sm:hidden">
+        <SearchBar value={searchTerm} onChange={setSearchTerm} placeholder="Search..." />
+      </div>
 
 {workspaces.length > 0 && (
   <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-2 mt-4 flex justify-between items-center">
