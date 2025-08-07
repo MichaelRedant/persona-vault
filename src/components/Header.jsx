@@ -4,7 +4,7 @@ import DarkModeSwitch from './DarkModeSwitch';
 import AboutModal from './AboutModal';
 import SearchBar from './SearchBar';
 import { HiDotsVertical } from 'react-icons/hi';
-import { FiUpload, FiDownload, FiInfo, FiSettings, FiLogOut, FiUser, FiShield } from 'react-icons/fi';
+import { FiUpload, FiDownload, FiInfo, FiSettings, FiLogOut, FiUser, FiShield, FiMenu } from 'react-icons/fi';
 import TagManagerModal from './TagManagerModal';
 import logoLight from '/logo-light.svg';
 import logoDark from '/logo-dark.svg';
@@ -26,7 +26,8 @@ export default function Header({
   handleUpdateTags,
   onLogout,
   isAdmin,
-  onOpenAdminPanel
+  onOpenAdminPanel,
+  onToggleSidebar
 }) {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
@@ -79,6 +80,13 @@ export default function Header({
         <div className="flex items-center justify-between max-w-screen-xl mx-auto px-2 sm:px-4 h-16">
           {/* Logo */}
           <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={onToggleSidebar}
+              className="md:hidden p-2 rounded-md text-gray-700 dark:text-gray-200 focus:outline-none"
+            >
+              <FiMenu className="w-6 h-6" />
+            </button>
             <img src={logoLight} alt="Persona Vault Logo" className="h-12 w-auto block dark:hidden" />
             <img src={logoDark} alt="Persona Vault Logo" className="h-12 w-auto hidden dark:block" />
           </div>

@@ -1,16 +1,14 @@
 // src/components/Sidebar.jsx
 
-import React, { useState } from 'react';
+import React from 'react';
 import {
   FiUsers,
   FiFileText,
   FiFolder,
   FiChevronLeft,
-  FiChevronRight,
 } from 'react-icons/fi';
 
-export default function Sidebar({ selectedTab, setSelectedTab }) {
-  const [collapsed, setCollapsed] = useState(false);
+export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen }) {
 
   const navItems = [
     { id: 'personas', icon: FiUsers, label: 'Personas' },
@@ -21,21 +19,21 @@ export default function Sidebar({ selectedTab, setSelectedTab }) {
   return (
     <aside
       className={`
-        fixed top-0 left-0 h-full
+        fixed top-0 left-0 h-full w-20
         bg-white/70 dark:bg-gray-900/70
         backdrop-blur-md
         border-r border-gray-200 dark:border-gray-700
         py-6 space-y-6
-        
+
         transform transition-transform duration-300 ease-in-out
-        ${collapsed ? '-translate-x-full' : 'translate-x-0'}
+        ${isOpen ? 'translate-x-0' : '-translate-x-full'}
 
         z-20
       `}
     >
       {/* Navigatieknoppen */}
       <div className="flex flex-col items-center space-y-6">
-        {navItems.map(({ id, icon: Icon, label }) => {
+        {navItems.map(({ id, icon, label }) => {
           const active = selectedTab === id;
           return (
             <button
@@ -51,29 +49,27 @@ export default function Sidebar({ selectedTab, setSelectedTab }) {
                 }
               `}
             >
-              <Icon className="w-6 h-6" />
+              {React.createElement(icon, { className: 'w-6 h-6' })}
             </button>
           );
         })}
       </div>
 
-      {/* Collapse/Expand knop */}
-      <button
-        type="button"
-        onClick={() => setCollapsed(!collapsed)}
-        className="
-          absolute top-4 right-[-0.75rem]
-          p-1 bg-white dark:bg-gray-800
-          rounded-full shadow-md
-          focus:outline-none
-        "
-      >
-        {collapsed ? (
-          <FiChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-        ) : (
+      {/* Collapse knop */}
+      {isOpen && (
+        <button
+          type="button"
+          onClick={() => setIsOpen(false)}
+          className="
+            absolute top-4 right-[-0.75rem]
+            p-1 bg-white dark:bg-gray-800
+            rounded-full shadow-md
+            focus:outline-none
+          "
+        >
           <FiChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
-        )}
-      </button>
+        </button>
+      )}
     </aside>
   );
 }
