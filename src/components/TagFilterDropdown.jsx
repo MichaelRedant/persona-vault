@@ -31,7 +31,7 @@ export default function TagFilterDropdown({ tags, activeTags, onTagToggle }) {
   }, []);
 
   return (
-    <div className="relative inline-block text-left mb-6 mr-4" ref={dropdownRef}>
+    <div className="relative inline-block mb-6" ref={dropdownRef}>
       {/* Trigger button */}
       <button
         onClick={() => setIsOpen(!isOpen)}

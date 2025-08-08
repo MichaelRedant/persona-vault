@@ -27,7 +27,7 @@ export default function QuickTitlesDropdown({ personaItems, promptItems, onShowT
   }, []);
 
   return (
-    <div className="relative inline-block text-left mb-6" ref={dropdownRef}>
+    <div className="relative inline-block mb-6" ref={dropdownRef}>
       {/* Trigger button */}
       <button
         onClick={() => setIsOpen(!isOpen)}

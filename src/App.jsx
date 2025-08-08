@@ -427,7 +427,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
 
 {workspaces.length > 0 && (
   <>
-  <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-2 mt-4 flex justify-between items-center">
+  <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-2 mt-4 flex flex-col sm:flex-row justify-between items-center gap-2">
     <div className="flex items-center space-x-2 text-sm">
       <label htmlFor="workspaceSelect" className="text-gray-700 dark:text-gray-300 font-medium">
         Workspace:
@@ -459,9 +459,9 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
       </div>
     </div>
 
-    <div className="flex items-center">
+    <div className="flex flex-wrap justify-center gap-2 mt-2 sm:mt-0 w-full sm:w-auto">
       <button
-        className="ml-4 mt-2 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-all"
+        className="w-full sm:w-auto px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-all"
         onClick={() => {
           const name = prompt('Name your workspace:');
           if (name && name.trim().length > 1) {
@@ -475,7 +475,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
         + New workspace
       </button>
       <button
-        className="ml-2 mt-2 px-3 py-1.5 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-all"
+        className="w-full sm:w-auto px-3 py-1.5 bg-gray-600 text-white rounded text-sm hover:bg-gray-700 transition-all"
         onClick={async () => {
           try {
             const res = await fetch(`${import.meta.env.VITE_API_BASE_URL}/workspaces_share_create.php`, {
@@ -524,7 +524,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
         />
       </div>
 
-      <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-4 flex flex-wrap gap-2 items-center">
+  <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-4 flex flex-wrap gap-2 items-center justify-center">
   <TagFilterDropdown
     tags={[...personas.map((p) => p.tags || []), ...prompts.map((p) => p.tags || [])]}
     activeTags={activeTags}
