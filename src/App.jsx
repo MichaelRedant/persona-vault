@@ -7,7 +7,7 @@ import FavoritesFilter from './components/FavoritesFilter';
 import Header from './components/Header';
 import Toast from './components/Toast';
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { usePersonasApi } from './hooks/usePersonasApi';
 import { usePromptsApi } from './hooks/usePromptsApi';
 import { useCollectionsApi } from './hooks/useCollectionsApi';
@@ -505,9 +505,11 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
     </div>
   </div>
   <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mt-1">
-    <a href="/marketplace" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+
+    <Link to="/marketplace" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
       Marketplace
-    </a>
+    </Link>
+
   </div>
   </>
 )}

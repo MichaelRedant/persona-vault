@@ -52,7 +52,7 @@ export default function PersonaCard({
   }, [persona.collection_ids, collections]);
 
   return (
-    <div className={`bg-gradient-to-tr from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 ${compactMode ? 'p-3 mb-4' : 'p-6 mb-6'} transition-transform transform hover:scale-[1.02] hover:shadow-xl duration-200 ease-in-out`}>
+    <div className={`card-container relative bg-gradient-to-tr from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 ${compactMode ? 'p-3 mb-4' : 'p-6 mb-6'} transition-transform transform hover:scale-[1.02] hover:shadow-xl duration-200 ease-in-out`}>
       <div className="flex justify-between items-start flex-wrap gap-4">
         {/* Content */}
         <div className="flex-grow min-w-0">
@@ -105,6 +105,16 @@ export default function PersonaCard({
           />
 
           <Button
+
+            onClick={() => handleCopy(persona.description)}
+            variant="secondary"
+            icon={<FiCopy />}
+            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+            title="Copy"
+          />
+
+          <Button
+
             onClick={() => onUpload(persona)}
             variant="primary"
             icon={<FiUploadCloud />}
@@ -115,11 +125,7 @@ export default function PersonaCard({
           <CardActionsDropdown
             actions={[
               {
-                label: 'Copy',
-                icon: <FiCopy />,
-                onClick: () => handleCopy(persona.description),
-              },
-              {
+
                 label: 'Edit',
                 icon: <FiEdit2 />,
                 onClick: () => onEdit(persona),

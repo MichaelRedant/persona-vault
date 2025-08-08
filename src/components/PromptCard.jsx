@@ -33,7 +33,7 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
       : [];
 
   return (
-    <div className={`bg-gradient-to-tr from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 ${compactMode ? 'p-2 mb-3' : 'p-6 mb-6'} transition-transform transform hover:scale-[1.02] hover:shadow-xl duration-200 ease-in-out animate-fadeIn`}>
+    <div className={`card-container relative bg-gradient-to-tr from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 ${compactMode ? 'p-2 mb-3' : 'p-6 mb-6'} transition-transform transform hover:scale-[1.02] hover:shadow-xl duration-200 ease-in-out animate-fadeIn`}>
 
       <div className="flex justify-between items-start flex-wrap sm:flex-nowrap">
         {/* Content */}
@@ -75,6 +75,16 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
           />
 
           <Button
+
+            onClick={() => handleCopy(prompt.content)}
+            variant="secondary"
+            icon={<FiCopy className="w-5 h-5" />}
+            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+            title="Copy"
+          />
+
+          <Button
+
             onClick={() => onUpload(prompt)}
             variant="primary"
             icon={<FiUploadCloud className="w-5 h-5" />}
@@ -85,11 +95,7 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
           <CardActionsDropdown
             actions={[
               {
-                label: 'Copy',
-                icon: <FiCopy className="w-5 h-5" />,
-                onClick: () => handleCopy(prompt.content),
-              },
-              {
+
                 label: 'Edit',
                 icon: <FiEdit2 className="w-5 h-5" />,
                 onClick: () => onEdit(prompt),
