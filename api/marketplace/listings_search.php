@@ -102,10 +102,12 @@ try {
             $sql = "
               SELECT l.id, l.title, l.description, l.price_cents, l.currency, l.item_type,
                      l.seller_user_id,
+                     u.username AS seller_name,
                      l.cover_file_id,
                      f.storage_path
               FROM marketplace_listings l
               LEFT JOIN files f ON f.id = l.cover_file_id
+              LEFT JOIN users u ON u.id = l.seller_user_id
               $whereSql" . ($whereSql ? ' AND ' : ' WHERE ') . "(
                 (MATCH(l.title, l.description, l.tags) AGAINST (? IN NATURAL LANGUAGE MODE))
                 OR (l.title LIKE ? OR l.description LIKE ?)
@@ -119,10 +121,12 @@ try {
             $sql = "
               SELECT l.id, l.title, l.description, l.price_cents, l.currency, l.item_type,
                      l.seller_user_id,
+                     u.username AS seller_name,
                      l.cover_file_id,
                      f.storage_path
               FROM marketplace_listings l
               LEFT JOIN files f ON f.id = l.cover_file_id
+              LEFT JOIN users u ON u.id = l.seller_user_id
               $whereSql" . ($whereSql ? ' AND ' : ' WHERE ') . "(
                 l.title LIKE ? OR l.description LIKE ?
               )
@@ -137,10 +141,12 @@ try {
         $sql = "
           SELECT l.id, l.title, l.description, l.price_cents, l.currency, l.item_type,
                  l.seller_user_id,
+                 u.username AS seller_name,
                  l.cover_file_id,
                  f.storage_path
           FROM marketplace_listings l
           LEFT JOIN files f ON f.id = l.cover_file_id
+          LEFT JOIN users u ON u.id = l.seller_user_id
           $whereSql
           ORDER BY $order
           LIMIT $limit OFFSET $offset

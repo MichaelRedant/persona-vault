@@ -31,6 +31,9 @@ export default function ListingCard({ item, onDownload, onClick, onEdit, onDelet
       <div className="flex-1">
         <h3 className="font-semibold text-gray-800 dark:text-gray-100 line-clamp-2">{item.title}</h3>
         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 capitalize">{item.item_type}</p>
+        {item.seller_name && (
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">By {item.seller_name}</p>
+        )}
       </div>
       <div className="mt-3 flex items-center justify-between">
         <span className="text-sm font-semibold">{price}</span>

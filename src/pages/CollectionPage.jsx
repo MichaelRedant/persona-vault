@@ -2,6 +2,8 @@ import { useState, useMemo } from 'react';
 import Button from '../components/Button';
 import PersonaCard from '../components/PersonaCard';
 import AddExistingPersonaModal from './AddExistingPersonaModal';
+import ListingManageModal from '../components/ListingManageModal';
+import { useMarketplaceApi } from '../hooks/useMarketplaceApi';
 
 export default function CollectionPage({
   collectionId,
@@ -15,8 +17,12 @@ export default function CollectionPage({
   onDeletePersona,
   onStartEditPersona,
   onShowToast,
+  token,
 }) {
   const [isAddPersonaModalOpen, setIsAddPersonaModalOpen] = useState(false);
+  const { createListing, uploadFile } = useMarketplaceApi(token);
+  const [uploadingPersona, setUploadingPersona] = useState(null);
+  const stripHtml = (html = '') => html.replace(/<[^>]*>/g, '');
 
   const personasInCollection = useMemo(() => {
   if (!collectionId || !Array.isArray(personas)) return [];
@@ -71,7 +77,7 @@ export default function CollectionPage({
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
         {personasInCollection.map((persona) => (
   <div key={persona.id} className="relative flex flex-col border rounded-xl shadow-sm dark:border-gray-700 bg-white dark:bg-gray-900 overflow-hidden">
-    
+
     {/* PersonaCard zonder eigen padding, maar met content */}
     <div className="p-4 pb-2">
       <PersonaCard
@@ -81,7 +87,7 @@ export default function CollectionPage({
         onDelete={() => onDeletePersona(persona.id)}
         onEdit={() => onStartEditPersona(persona)}
         onShowToast={onShowToast}
-        onUpload={() => onShowToast('Uploaded to marketplace!')}
+        onUpload={(p) => setUploadingPersona(p)}
         compactMode // optioneel activeren voor consistente hoogte
       />
     </div>
@@ -111,6 +117,24 @@ export default function CollectionPage({
         onAssignPersonasToCollection(personaIds, collectionId);
         onShowToast('Personas toegevoegd aan collectie!');
         setIsAddPersonaModalOpen(false);
+      }}
+    />
+
+    <ListingManageModal
+      open={!!uploadingPersona}
+      onClose={() => setUploadingPersona(null)}
+      initial={uploadingPersona ? {
+        title: uploadingPersona.name,
+        description: stripHtml(uploadingPersona.description),
+        item_type: 'persona',
+        item_id: uploadingPersona.id,
+        tags: Array.isArray(uploadingPersona.tags) ? uploadingPersona.tags.join(',') : (uploadingPersona.tags || ''),
+      } : {}}
+      uploadFn={uploadFile}
+      onSave={async (payload) => {
+        await createListing({ ...payload, currency: 'EUR', visibility: 'public' });
+        setUploadingPersona(null);
+        onShowToast('Uploaded to marketplace!');
       }}
     />
   </div>
