@@ -1,10 +1,11 @@
+// src/components/Profile.jsx
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { jwtDecode } from 'jwt-decode';
 import Tooltip from './Tooltip';
 import OnboardingChecklist from './OnboardingChecklist';
 
-export default function Profile() {
+export default function Profile({ onCreatePrompt }) {
   const navigate = useNavigate();
   const [decodedToken, setDecodedToken] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -35,12 +36,20 @@ export default function Profile() {
   return (
     <div className="max-w-2xl mx-auto p-4">
       <h2 className="text-2xl font-bold mb-4">Profiel</h2>
-      <OnboardingChecklist />
+
+      {/* Onboarding: verbergt zichzelf bij 100% */}
+      <OnboardingChecklist onCreateClick={onCreatePrompt} />
+
       {decodedToken ? (
         <div className="space-y-2">
           <p><strong>Gebruiker:</strong> {decodedToken.username || decodedToken.email || 'Onbekend'}</p>
-          <p><strong>Geregistreerd op:</strong> {new Date(decodedToken.iat * 1000).toLocaleString()}</p>
-          <p><strong>Token verloopt:</strong> {new Date(decodedToken.exp * 1000).toLocaleString()}</p>
+          {decodedToken.iat && (
+            <p><strong>Geregistreerd op:</strong> {new Date(decodedToken.iat * 1000).toLocaleString()}</p>
+          )}
+          {decodedToken.exp && (
+            <p><strong>Token verloopt:</strong> {new Date(decodedToken.exp * 1000).toLocaleString()}</p>
+          )}
+
           <Tooltip text="Sign out of your account">
             <button
               onClick={handleLogout}
@@ -54,6 +63,5 @@ export default function Profile() {
         <p className="text-red-600">Geen geldige logingegevens gevonden.</p>
       )}
     </div>
-    
   );
 }

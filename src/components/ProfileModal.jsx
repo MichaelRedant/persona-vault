@@ -1,6 +1,9 @@
+// src/components/ProfileModal.jsx
+import { useEffect } from 'react';
 import { FiLogOut, FiX, FiDownload, FiPlus } from 'react-icons/fi';
 import Button from './Button';
 import TagAnalyticsWithBadges from './TagAnalyticsWithBadges';
+import OnboardingChecklist from './OnboardingChecklist';
 
 export default function ProfileModal({
   decodedToken,
@@ -14,10 +17,25 @@ export default function ProfileModal({
   onNewPrompt,
   onNewPersona,
   onExport,
-  personas,           // ✅ toegevoegd
-  prompts             // ✅ toegevoegd
+  personas, // ✅ toegevoegd
+  prompts   // ✅ toegevoegd
 }) {
   const { username, email, iat } = decodedToken || {};
+
+  // ✅ Auto-mark onboarding stappen op basis van je data
+  useEffect(() => {
+    try {
+      if (username || email) {
+        localStorage.setItem('vault_onboard_completedProfile', '1');
+      }
+      if (Number(personaCount) > 0) {
+        localStorage.setItem('vault_onboard_createdPersona', '1');
+      }
+      if (Number(promptCount) > 0) {
+        localStorage.setItem('vault_onboard_createdPrompt', '1');
+      }
+    } catch {}
+  }, [username, email, personaCount, promptCount]);
 
   return (
     <div
@@ -42,10 +60,9 @@ export default function ProfileModal({
             {username || 'Unknown'}
           </h3>
           {email && <p className="text-sm text-gray-500 dark:text-gray-400">{email}</p>}
-          <p className="text-sm text-gray-500 dark:text-gray-400"></p>
         </div>
 
-        {/* Activity overview */}
+        {/* Activity */}
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-2 text-sm text-gray-700 dark:text-gray-200">
           <div className="uppercase tracking-wide text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
             Activity
@@ -54,7 +71,7 @@ export default function ProfileModal({
             <div>Personas:</div>
             <div className="text-right">{personaCount}</div>
 
-            <div>Other prompts:</div>
+            <div>Prompts:</div>
             <div className="text-right">{promptCount}</div>
 
             <div>Favorites:</div>
@@ -68,17 +85,18 @@ export default function ProfileModal({
           </div>
         </div>
 
-        {/* Tag Analytics */}
+        {/* Tag analytics */}
         <TagAnalyticsWithBadges personas={personas} prompts={prompts} topN={5} />
 
-        {/* Login info */}
+        {/* ✅ Onboarding checklist (verdwijnt bij 100%) */}
+        <OnboardingChecklist onCreateClick={onNewPrompt} />
+
+        {/* Session info */}
         <div className="border-t border-gray-200 dark:border-gray-700 pt-4 space-y-1 text-xs text-gray-500 dark:text-gray-400">
           <div className="uppercase tracking-wide text-xs text-gray-500 dark:text-gray-400 mb-2 font-semibold">
             Session info
           </div>
-          {iat && (
-            <p>Logged in at: {new Date(iat * 1000).toLocaleString()}</p>
-          )}
+          {iat && <p>Logged in at: {new Date(iat * 1000).toLocaleString()}</p>}
         </div>
 
         {/* Actions */}

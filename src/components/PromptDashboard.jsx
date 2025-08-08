@@ -5,6 +5,7 @@ import Button from './Button';
 import RevisionsModal from './RevisionsModal'; // 👈 nieuwe component
 import Tooltip from './Tooltip';
 
+
 import { useState, useEffect, useRef } from 'react';
 import { usePromptRevisionsApi } from '../hooks/usePromptRevisionsApi';
 
@@ -108,7 +109,7 @@ export default function PromptDashboard({
 
   return (
     <div className="p-4 sm:p-6">
-      <OnboardingChecklist />
+      
       <div className="flex justify-end mb-6">
         <Tooltip text="Create a new prompt">
           <Button variant="primary" onClick={startCreate}>
