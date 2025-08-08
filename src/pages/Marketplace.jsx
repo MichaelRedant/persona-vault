@@ -6,6 +6,7 @@ import { jwtDecode } from 'jwt-decode';
 import Header from '../components/Header';
 import ListingCard from '../components/ListingCard';
 import ListingManageModal from '../components/ListingManageModal';
+import ListingDetailsModal from '../components/ListingDetailsModal';
 import { useMarketplaceApi } from '../hooks/useMarketplaceApi';
 
 const PLACEHOLDER = '/logo-512.png'; // fallback als geen cover_url
@@ -15,6 +16,7 @@ export default function Marketplace({ token }) {
   const [q, setQ] = useState('');
   const [manageOpen, setManageOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+  const [active, setActive] = useState(null);
   const [isAdmin, setIsAdmin] = useState(false);
 
   const didInit = useRef(false);
@@ -113,23 +115,34 @@ export default function Marketplace({ token }) {
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {items.map((it) => (
-              <ListingCard
-                key={it.id}
-                item={it}
-                canManage={it.is_owner || isAdmin}
-                onDownload={async () => {
-                  await trackDownload(it.id);
-                  if (it.file_url) window.open(it.file_url, '_blank', 'noopener');
-                }}
-                onClick={() => alert('TODO: listing details')}
-                onEdit={() => { setEditing(it); setManageOpen(true); }}
-                onDelete={async () => {
-                  if (confirm('Delete this listing?')) {
-                    await deleteListing(it.id);
-                    await load();
-                  }
-                }}
-              />
+              <div key={it.id} className="relative">
+                <ListingCard
+                  item={it}
+                  canManage={it.is_owner || isAdmin}
+                  onDownload={async () => {
+                    await trackDownload(it.id);
+                    if (it.file_url) window.open(it.file_url, '_blank', 'noopener');
+                  }}
+                  onClick={() => setActive(active?.id === it.id ? null : it)}
+                  onEdit={() => { setEditing(it); setManageOpen(true); }}
+                  onDelete={async () => {
+                    if (confirm('Delete this listing?')) {
+                      await deleteListing(it.id);
+                      await load();
+                    }
+                  }}
+                />
+                {active?.id === it.id && (
+                  <ListingDetailsModal
+                    item={active}
+                    onClose={() => setActive(null)}
+                    onDownload={async () => {
+                      await trackDownload(it.id);
+                      if (it.file_url) window.open(it.file_url, '_blank', 'noopener');
+                    }}
+                  />
+                )}
+              </div>
             ))}
           </div>
 
