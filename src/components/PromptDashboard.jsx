@@ -140,6 +140,7 @@ export default function PromptDashboard({
               onEdit={startEdit}
               onViewRevisions={() => openRevisionsModal(prompt)}
               onShowToast={onShowToast}
+              onUpload={() => onShowToast('Uploaded to marketplace!')}
             />
           ))}
         </div>

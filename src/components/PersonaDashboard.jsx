@@ -194,6 +194,7 @@ const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevis
               onEdit={startEdit}
               onShowToast={onShowToast}
               onViewRevisions={() => openRevisionsModal(persona)}
+              onUpload={() => onShowToast('Uploaded to marketplace!')}
             />
           ))}
         </div>

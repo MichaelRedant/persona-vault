@@ -426,6 +426,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
       </div>
 
 {workspaces.length > 0 && (
+  <>
   <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-2 mt-4 flex justify-between items-center">
     <div className="flex items-center space-x-2 text-sm">
       <label htmlFor="workspaceSelect" className="text-gray-700 dark:text-gray-300 font-medium">
@@ -503,6 +504,12 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
       </button>
     </div>
   </div>
+  <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mt-1">
+    <a href="/marketplace" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+      Marketplace
+    </a>
+  </div>
+  </>
 )}
 
 

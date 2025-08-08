@@ -3,10 +3,11 @@ import { downloadAsJson } from '../utils/downloadAsJson';
 import TryInPlatformButtons from './TryInPlatformButtons';
 import Button from './Button';
 import ConfirmDialog from './ConfirmDialog';
+import CardActionsDropdown from './CardActionsDropdown';
 import { AiFillStar, AiOutlineStar } from 'react-icons/ai';
-import { FiEdit2, FiTrash2, FiClock, FiDownload, FiCopy } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiClock, FiDownload, FiCopy, FiUploadCloud } from 'react-icons/fi';
 
-export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDelete, onEdit, onShowToast, onViewRevisions }) {
+export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDelete, onEdit, onShowToast, onViewRevisions, onUpload = () => {} }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleCopy = (htmlContent) => {
@@ -64,7 +65,7 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-2 justify-end sm:justify-start mt-4 sm:mt-0">
+        <div className="flex flex-wrap gap-2 justify-end sm:justify-start mt-4 sm:mt-0 items-center">
           <Button
             onClick={() => onToggleFavorite(prompt.id, prompt.favorite)}
             variant="success"
@@ -72,41 +73,45 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
             className="w-10 h-10 text-xl p-0 flex items-center justify-center"
             title="Favorite"
           />
+
           <Button
-            onClick={() => handleCopy(prompt.content)}
-            variant="secondary"
-            icon={<FiCopy className="w-5 h-5" />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Copy to Clipboard"
-          />
-          <Button
-            onClick={() => onEdit(prompt)}
+            onClick={() => onUpload(prompt)}
             variant="primary"
-            icon={<FiEdit2 className="w-5 h-5" />}
+            icon={<FiUploadCloud className="w-5 h-5" />}
             className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Edit"
+            title="Upload to marketplace"
           />
-          <Button
-            onClick={() => setConfirmOpen(true)}
-            variant="danger"
-            icon={<FiTrash2 className="w-5 h-5" />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Delete"
+
+          <CardActionsDropdown
+            actions={[
+              {
+                label: 'Copy',
+                icon: <FiCopy className="w-5 h-5" />,
+                onClick: () => handleCopy(prompt.content),
+              },
+              {
+                label: 'Edit',
+                icon: <FiEdit2 className="w-5 h-5" />,
+                onClick: () => onEdit(prompt),
+              },
+              {
+                label: 'Delete',
+                icon: <FiTrash2 className="w-5 h-5" />,
+                danger: true,
+                onClick: () => setConfirmOpen(true),
+              },
+              {
+                label: 'Download',
+                icon: <FiDownload className="w-5 h-5" />,
+                onClick: () => downloadAsJson(prompt, prompt.title || 'prompt'),
+              },
+              {
+                label: 'Revisions',
+                icon: <FiClock />,
+                onClick: () => onViewRevisions(prompt),
+              },
+            ]}
           />
-          <Button
-            onClick={() => downloadAsJson(prompt, prompt.title || 'prompt')}
-            variant="primary"
-            icon={<FiDownload className="w-5 h-5" />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Export"
-          />
-          <Button
-  onClick={() => onViewRevisions(prompt)}
-  variant="secondary"
-  icon={<FiClock />}
-  className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-  title="Revision History"
-/>
         </div>
       </div>
 

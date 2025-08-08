@@ -2,9 +2,10 @@ import { useState, useMemo } from 'react';
 import { downloadAsJson } from '../utils/downloadAsJson';
 import TryInPlatformButtons from './TryInPlatformButtons';
 import { AiFillStar, AiOutlineStar } from 'react-icons/ai';
-import { FiEdit2, FiTrash2, FiClock, FiDownload, FiCopy } from 'react-icons/fi';
+import { FiEdit2, FiTrash2, FiClock, FiDownload, FiCopy, FiUploadCloud } from 'react-icons/fi';
 import ConfirmDialog from './ConfirmDialog';
 import Button from './Button';
+import CardActionsDropdown from './CardActionsDropdown';
 
 export default function PersonaCard({
   persona,
@@ -15,6 +16,7 @@ export default function PersonaCard({
   onEdit,
   onShowToast,
   onViewRevisions,
+  onUpload = () => {},
 }) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -93,7 +95,7 @@ export default function PersonaCard({
         </div>
 
         {/* Actions */}
-        <div className="flex flex-wrap gap-2 justify-center mt-4">
+        <div className="flex flex-wrap gap-2 justify-center mt-4 items-center">
           <Button
             onClick={() => onToggleFavorite(persona.id, persona.favorite)}
             variant="success"
@@ -103,44 +105,43 @@ export default function PersonaCard({
           />
 
           <Button
-            onClick={() => handleCopy(persona.description)}
-            variant="secondary"
-            icon={<FiCopy />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Copy to Clipboard"
-          />
-
-          <Button
-            onClick={() => onEdit(persona)}
+            onClick={() => onUpload(persona)}
             variant="primary"
-            icon={<FiEdit2 />}
+            icon={<FiUploadCloud />}
             className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Edit"
+            title="Upload to marketplace"
           />
 
-          <Button
-            onClick={() => setConfirmOpen(true)}
-            variant="danger"
-            icon={<FiTrash2 />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Delete"
+          <CardActionsDropdown
+            actions={[
+              {
+                label: 'Copy',
+                icon: <FiCopy />,
+                onClick: () => handleCopy(persona.description),
+              },
+              {
+                label: 'Edit',
+                icon: <FiEdit2 />,
+                onClick: () => onEdit(persona),
+              },
+              {
+                label: 'Delete',
+                icon: <FiTrash2 />,
+                danger: true,
+                onClick: () => setConfirmOpen(true),
+              },
+              {
+                label: 'Download',
+                icon: <FiDownload />,
+                onClick: () => downloadAsJson(persona, persona.name || 'persona'),
+              },
+              {
+                label: 'Revisions',
+                icon: <FiClock />,
+                onClick: () => onViewRevisions(persona),
+              },
+            ]}
           />
-
-          <Button
-            onClick={() => downloadAsJson(persona, persona.name || 'persona')}
-            variant="primary"
-            icon={<FiDownload />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Export"
-          />
-          <Button
-  onClick={() => onViewRevisions(persona)}
-  variant="secondary"
-  icon={<FiClock />}
-  className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-  title="Revision History"
-/>
-
         </div>
       </div>
 
