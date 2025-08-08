@@ -5,13 +5,12 @@ export function useMarketplaceApi(token) {
   const auth = token ? { Authorization: `Bearer ${token}` } : {};
 
   const searchListings = async (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
+    const query = { ...params };
+    if (token) query.token = token;
+    const qs = new URLSearchParams(query).toString();
 
     try {
-      const res = await fetch(`${BASE}/marketplace/listings_search.php?${qs}`, {
-        method: 'GET',
-        headers: { 'Content-Type': 'application/json', ...auth },
-      });
+      const res = await fetch(`${BASE}/marketplace/listings_search.php?${qs}`);
       const json = await res.json();
       if (!json.success) throw new Error(json.error || 'Search failed');
       return json.items || [];

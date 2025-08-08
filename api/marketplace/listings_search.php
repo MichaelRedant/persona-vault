@@ -16,10 +16,19 @@ header('Content-Type: application/json');
 
 // --- optional auth: admin can see everything
 $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
+$tokenParam = $_GET['token'] ?? '';
 $isAdmin = false;
 $userId = null;
+
+$jwt = null;
 if (preg_match('/Bearer\s(\S+)/', $authHeader, $m)) {
-    $decoded = validate_jwt($m[1]);
+    $jwt = $m[1];
+} elseif ($tokenParam !== '') {
+    $jwt = $tokenParam;
+}
+if ($jwt) {
+    $decoded = validate_jwt($jwt);
+
     if ($decoded) {
         $isAdmin = !empty($decoded['is_admin']);
         $userId = $decoded['user_id'] ?? null;
