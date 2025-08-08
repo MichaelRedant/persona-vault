@@ -19,6 +19,7 @@ $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 $tokenParam = $_GET['token'] ?? '';
 $isAdmin = false;
 $userId = null;
+
 $jwt = null;
 if (preg_match('/Bearer\s(\S+)/', $authHeader, $m)) {
     $jwt = $m[1];
@@ -27,6 +28,7 @@ if (preg_match('/Bearer\s(\S+)/', $authHeader, $m)) {
 }
 if ($jwt) {
     $decoded = validate_jwt($jwt);
+
     if ($decoded) {
         $isAdmin = !empty($decoded['is_admin']);
         $userId = $decoded['user_id'] ?? null;
