@@ -773,6 +773,7 @@ workspaceId={activeWorkspaceId}
 
       {isProfileModalOpen && decodedToken && (
   <ProfileModal
+  token={token}
   decodedToken={decodedToken}
   personaCount={personaCount}
   personas={personas}   // <--- DIT TOEVOEGEN
