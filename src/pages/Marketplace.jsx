@@ -24,7 +24,7 @@ export default function Marketplace({ token }) {
     const data = await searchListings({ q, limit: 24, sort: 'recent' });
     const mapped = data.map((d) => ({
       ...d,
-      cover_url: d.cover_file_id ? `${window.location.origin}/uploads/seed/cover-persona-starter.png` : null,
+      cover_url: d.cover_url || (d.cover_file_id ? `${window.location.origin}/uploads/seed/cover-persona-starter.png` : null),
       is_owner: d.is_owner,
     }));
     setItems(mapped);
