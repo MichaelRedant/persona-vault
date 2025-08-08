@@ -1,11 +1,13 @@
 // src/components/Sidebar.jsx
 
 import React from 'react';
+import { Link } from 'react-router-dom';
 import {
   FiUsers,
   FiFileText,
   FiFolder,
   FiChevronLeft,
+  FiShoppingBag,
 } from 'react-icons/fi';
 
 export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen }) {
@@ -14,6 +16,7 @@ export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen
     { id: 'personas', icon: FiUsers, label: 'Personas' },
     { id: 'prompts', icon: FiFileText, label: 'Prompts' },
     { id: 'collections', icon: FiFolder, label: 'Collections' },
+    { id: 'marketplace', icon: FiShoppingBag, label: 'Marketplace', href: '/marketplace' },
   ];
 
   return (
@@ -42,21 +45,26 @@ export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen
       >
         {/* Navigatieknoppen */}
         <div className="flex flex-col items-center space-y-6">
-          {navItems.map(({ id, icon, label }) => {
+          {navItems.map(({ id, icon, label, href }) => {
             const active = selectedTab === id;
-            return (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setSelectedTab(id)}
-                title={label}
-                className={`
+            const classes = `
                   p-3 rounded-xl transition-colors
                   ${active
                     ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50'
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
                   }
-                `}
+                `;
+            return href ? (
+              <Link key={id} to={href} title={label} className={classes}>
+                {React.createElement(icon, { className: 'w-6 h-6' })}
+              </Link>
+            ) : (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setSelectedTab(id)}
+                title={label}
+                className={classes}
               >
                 {React.createElement(icon, { className: 'w-6 h-6' })}
               </button>
