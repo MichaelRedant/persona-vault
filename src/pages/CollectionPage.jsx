@@ -81,6 +81,7 @@ export default function CollectionPage({
         onDelete={() => onDeletePersona(persona.id)}
         onEdit={() => onStartEditPersona(persona)}
         onShowToast={onShowToast}
+        onUpload={() => onShowToast('Uploaded to marketplace!')}
         compactMode // optioneel activeren voor consistente hoogte
       />
     </div>

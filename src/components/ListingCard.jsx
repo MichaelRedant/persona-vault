@@ -1,7 +1,6 @@
 // src/components/ListingCard.jsx
 export default function ListingCard({ item, onFavorite, onClick }) {
   const price = item.price_cents > 0 ? `€ ${(item.price_cents/100).toFixed(2)}` : 'Free';
-  const cover = item.cover_file_id ? `${import.meta.env.VITE_BASE_URL || ''}/${item.storage_path || ''}` : null;
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-xl shadow hover:shadow-md transition p-3 flex flex-col">

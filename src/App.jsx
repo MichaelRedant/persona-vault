@@ -7,7 +7,7 @@ import FavoritesFilter from './components/FavoritesFilter';
 import Header from './components/Header';
 import Toast from './components/Toast';
 import { useState, useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, Link } from 'react-router-dom';
 import { usePersonasApi } from './hooks/usePersonasApi';
 import { usePromptsApi } from './hooks/usePromptsApi';
 import { useCollectionsApi } from './hooks/useCollectionsApi';
@@ -426,6 +426,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
       </div>
 
 {workspaces.length > 0 && (
+  <>
   <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mb-2 mt-4 flex justify-between items-center">
     <div className="flex items-center space-x-2 text-sm">
       <label htmlFor="workspaceSelect" className="text-gray-700 dark:text-gray-300 font-medium">
@@ -503,6 +504,12 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
       </button>
     </div>
   </div>
+  <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mt-1">
+    <Link to="/marketplace" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
+      Marketplace
+    </Link>
+  </div>
+  </>
 )}
 
 

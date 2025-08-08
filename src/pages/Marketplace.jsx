@@ -1,5 +1,5 @@
 // src/pages/Marketplace.jsx
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import ListingCard from '../components/ListingCard';
 import UploadModal from '../components/UploadModal';
 import { useMarketplaceApi } from '../hooks/useMarketplaceApi';
@@ -11,17 +11,18 @@ export default function Marketplace({ token }) {
 
   const { searchListings, toggleFavorite, uploadFile, createListing } = useMarketplaceApi(token);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     const data = await searchListings({ q, limit: 24, sort: 'recent' });
-    // map cover path -> URL if you serve /uploads statically
     const mapped = data.map(d => ({
       ...d,
       cover_url: d.cover_file_id ? `${window.location.origin}/uploads/seed/cover-persona-starter.png` : null
     }));
     setItems(mapped);
-  };
+  }, [q, searchListings]);
 
-  useEffect(() => { load(); /* eslint-disable-next-line */ }, []);
+  useEffect(() => {
+    load();
+  }, [load]);
 
   return (
     <main className="max-w-6xl mx-auto p-4">

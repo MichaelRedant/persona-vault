@@ -1,7 +1,7 @@
 // src/hooks/useMarketplaceApi.js
 const BASE = import.meta.env.VITE_API_BASE_URL;
 
-export function useMarketplaceApi(token, toast) {
+export function useMarketplaceApi(token) {
   const auth = token ? { Authorization: `Bearer ${token}` } : {};
 
   const searchListings = async (params = {}) => {
