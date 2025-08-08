@@ -1,5 +1,5 @@
 // src/components/ListingCard.jsx
-export default function ListingCard({ item, onFavorite, onClick }) {
+export default function ListingCard({ item, onDownload, onClick }) {
   const price = item.price_cents > 0 ? `€ ${(item.price_cents/100).toFixed(2)}` : 'Free';
 
   return (
@@ -18,10 +18,10 @@ export default function ListingCard({ item, onFavorite, onClick }) {
       <div className="mt-3 flex items-center justify-between">
         <span className="text-sm font-semibold">{price}</span>
         <button
-          className="text-sm px-2 py-1 rounded hover:bg-blue-50 dark:hover:bg-blue-900/30 text-blue-600 dark:text-blue-400"
-          onClick={onFavorite}
+          className="text-sm px-3 py-1 rounded bg-indigo-500 hover:bg-indigo-600 text-white"
+          onClick={onDownload}
         >
-          ♥ Favorite
+          Download
         </button>
       </div>
       <button className="mt-2 text-xs text-gray-500 hover:underline" onClick={onClick}>
