@@ -17,9 +17,13 @@ header('Content-Type: application/json');
 // --- optional auth: admin can see everything
 $authHeader = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
 $isAdmin = false;
+$userId = null;
 if (preg_match('/Bearer\s(\S+)/', $authHeader, $m)) {
     $decoded = validate_jwt($m[1]);
-    $isAdmin = $decoded && !empty($decoded['is_admin']);
+    if ($decoded) {
+        $isAdmin = !empty($decoded['is_admin']);
+        $userId = $decoded['user_id'] ?? null;
+    }
 }
 
 // --- inputs
@@ -88,6 +92,7 @@ try {
             // FT + LIKE safety-net
             $sql = "
               SELECT l.id, l.title, l.description, l.price_cents, l.currency, l.item_type,
+                     l.seller_user_id,
                      l.cover_file_id,
                      f.storage_path
               FROM marketplace_listings l
@@ -104,6 +109,7 @@ try {
             // LIKE-only fallback
             $sql = "
               SELECT l.id, l.title, l.description, l.price_cents, l.currency, l.item_type,
+                     l.seller_user_id,
                      l.cover_file_id,
                      f.storage_path
               FROM marketplace_listings l
@@ -121,6 +127,7 @@ try {
     } else {
         $sql = "
           SELECT l.id, l.title, l.description, l.price_cents, l.currency, l.item_type,
+                 l.seller_user_id,
                  l.cover_file_id,
                  f.storage_path
           FROM marketplace_listings l
@@ -144,7 +151,9 @@ try {
         } else {
             $r['cover_url'] = null;
         }
-        unset($r['storage_path']); // FE hoeft raw path niet te kennen
+
+        $r['is_owner'] = $userId !== null && (int)$r['seller_user_id'] === (int)$userId;
+        unset($r['storage_path'], $r['seller_user_id']); // FE hoeft raw path niet te kennen
         // optioneel: formatteer prijs client-side
     }
 
