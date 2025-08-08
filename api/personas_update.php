@@ -18,20 +18,47 @@ if (isset($data['collectionIds']) && is_array($data['collectionIds'])) {
     $collectionIds = array_filter(array_map('intval', $data['collectionIds']));
 }
 
-// ✅ Check of de persona van de user én de workspace is
-$checkStmt = $pdo->prepare("SELECT id FROM personas WHERE id = ? AND user_id = ? AND workspace_id = ?");
-$checkStmt->execute([$id, $user_id, $workspace_id]);
-if ($checkStmt->rowCount() === 0) {
+// ✅ Check of de persona bestaat en of de gebruiker eigenaar is (admins mogen alles)
+if ($is_admin) {
+    $checkStmt = $pdo->prepare("SELECT user_id FROM personas WHERE id = ? AND workspace_id = ?");
+    $checkStmt->execute([$id, $workspace_id]);
+} else {
+    $checkStmt = $pdo->prepare("SELECT user_id FROM personas WHERE id = ? AND user_id = ? AND workspace_id = ?");
+    $checkStmt->execute([$id, $user_id, $workspace_id]);
+}
+$ownerId = $checkStmt->fetchColumn();
+if (!$ownerId) {
     http_response_code(403);
     echo json_encode(['error' => 'Unauthorized']);
     exit;
 }
 
 // ✅ Update persona zelf
-$stmt = $pdo->prepare("UPDATE personas 
-    SET name = ?, description = ?, favorite = ?, tags = ?, updated_at = CURRENT_TIMESTAMP 
+$params = [$name, $description, $favorite, $tags, $id];
+if ($is_admin) {
+    $stmt = $pdo->prepare("UPDATE personas
+    SET name = ?, description = ?, favorite = ?, tags = ?, updated_at = CURRENT_TIMESTAMP
+    WHERE id = ? AND workspace_id = ?");
+    $params[] = $workspace_id;
+    $stmt->execute($params);
+    if ($stmt->rowCount() === 0) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Persona not found']);
+        exit;
+    }
+} else {
+    $stmt = $pdo->prepare("UPDATE personas
+    SET name = ?, description = ?, favorite = ?, tags = ?, updated_at = CURRENT_TIMESTAMP
     WHERE id = ? AND user_id = ? AND workspace_id = ?");
-$stmt->execute([$name, $description, $favorite, $tags, $id, $user_id, $workspace_id]);
+    $params[] = $user_id;
+    $params[] = $workspace_id;
+    $stmt->execute($params);
+    if ($stmt->rowCount() === 0) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Unauthorized']);
+        exit;
+    }
+}
 
 // ✅ Sync collections
 try {
@@ -48,7 +75,7 @@ try {
             VALUES (?, ?, ?)
         ");
         foreach ($collectionIds as $colId) {
-            $insertStmt->execute([$id, $colId, $user_id]);
+            $insertStmt->execute([$id, $colId, $ownerId]);
         }
     }
 

@@ -13,9 +13,23 @@ if ($id <= 0) {
 }
 
 try {
-    // ✅ Delete alleen als persona bij gebruiker EN workspace hoort
-    $stmt = $pdo->prepare("DELETE FROM personas WHERE id = ? AND user_id = ? AND workspace_id = ?");
-    $stmt->execute([$id, $user_id, $workspace_id]);
+    // ✅ Controleer of persona bestaat en of user eigenaar is (admins mogen alles)
+    if ($is_admin) {
+        $check = $pdo->prepare("SELECT id FROM personas WHERE id = ? AND workspace_id = ?");
+        $check->execute([$id, $workspace_id]);
+    } else {
+        $check = $pdo->prepare("SELECT id FROM personas WHERE id = ? AND user_id = ? AND workspace_id = ?");
+        $check->execute([$id, $user_id, $workspace_id]);
+    }
+
+    if (!$check->fetchColumn()) {
+        http_response_code(403);
+        echo json_encode(['error' => 'Forbidden: You do not have access to this persona']);
+        exit;
+    }
+
+    $stmt = $pdo->prepare("DELETE FROM personas WHERE id = ?");
+    $stmt->execute([$id]);
 
     echo json_encode(['success' => true]);
 } catch (PDOException $e) {
