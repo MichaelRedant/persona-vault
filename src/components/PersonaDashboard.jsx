@@ -20,7 +20,8 @@ export default function PersonaDashboard({
   onShowToast,
   collections,
   defaultCollectionId = null,
-  token
+  token,
+  workspaceId
 }) {
  const [isModalOpen, setIsModalOpen] = useState(false);
 const [editingPersona, setEditingPersona] = useState(null);
@@ -29,7 +30,7 @@ const [visibleCount, setVisibleCount] = useState(20);
 const [selectedPersonaForRevisions, setSelectedPersonaForRevisions] = useState(null);
 const loadMoreRef = useRef();
 
-const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevisionsApi(token);
+const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevisionsApi(token, workspaceId);
 
   const openRevisionsModal = async (persona) => {
   await fetchRevisions(persona.id);
