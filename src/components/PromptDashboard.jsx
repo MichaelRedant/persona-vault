@@ -3,6 +3,7 @@ import PromptForm from './PromptForm';
 import PromptCard from './PromptCard';
 import Button from './Button';
 import RevisionsModal from './RevisionsModal'; // 👈 nieuwe component
+import Tooltip from './Tooltip';
 import { useState, useEffect, useRef } from 'react';
 import { usePromptRevisionsApi } from '../hooks/usePromptRevisionsApi';
 
@@ -106,15 +107,19 @@ export default function PromptDashboard({
   return (
     <div className="p-4 sm:p-6">
       <div className="flex justify-end mb-6">
-        <Button variant="primary" onClick={startCreate}>
-          + Add Prompt
-        </Button>
+        <Tooltip text="Create a new prompt">
+          <Button variant="primary" onClick={startCreate}>
+            + Add Prompt
+          </Button>
+        </Tooltip>
       </div>
 
       {filteredPrompts.length === 0 ? (
         <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <p className="text-lg mb-2">No prompts found.</p>
-          <p className="text-sm">Try adjusting your search or filters.</p>
+          <p className="text-lg mb-4">No prompts yet</p>
+          <Button variant="primary" onClick={startCreate}>
+            Create your first prompt
+          </Button>
         </div>
       ) : (
         <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
