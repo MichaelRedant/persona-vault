@@ -1,7 +1,7 @@
 import Modal from './Modal';
 import Button from './Button';
 import { diffWords } from 'diff';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 // 🔒 HTML-stripping helper
 const stripHtml = (html) => {
@@ -38,6 +38,10 @@ export default function RevisionsModal({
   const label = type === 'persona' ? 'Persona' : 'Prompt';
   const [selectedRevision, setSelectedRevision] = useState(null);
   const currentData = currentPrompt || {};
+
+  useEffect(() => {
+    setSelectedRevision(null);
+  }, [currentPrompt?.id, revisions, isOpen]);
 
   if (!isOpen) return null;
 
