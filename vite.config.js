@@ -2,7 +2,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
-const basePath = '/vault/'; // ← update dit als je in root zou willen publiceren
+const basePath = '/vault'; // ← update dit als je in root zou willen publiceren
 
 export default defineConfig({
   base: basePath,
@@ -14,8 +14,8 @@ export default defineConfig({
       manifest: {
         name: 'Persona Vault',
         short_name: 'Vault',
-        start_url: '/vault/',
-        scope: '/vault/',
+        start_url: '/vault',
+        scope: '/vault',
         display: 'standalone',
         background_color: '#ffffff',
         theme_color: '#2563eb',

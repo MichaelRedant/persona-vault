@@ -6,7 +6,9 @@ export function useMarketplaceApi(token) {
 
   const searchListings = async (params = {}) => {
     const qs = new URLSearchParams(params).toString();
-    const res = await fetch(`${BASE}/marketplace/listings_search.php?${qs}`);
+    const res = await fetch(`${BASE}/marketplace/listings_search.php?${qs}`, {
+      headers: { ...auth },
+    });
     const json = await res.json();
     if (!json.success) throw new Error(json.error || 'Search failed');
     return json.items || [];
@@ -31,6 +33,16 @@ export function useMarketplaceApi(token) {
     });
     const json = await res.json();
     if (!json.success) throw new Error(json.error || 'Update failed');
+  };
+
+  const deleteListing = async (listingId) => {
+    const res = await fetch(`${BASE}/marketplace/listings_delete.php`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', ...auth },
+      body: JSON.stringify({ id: listingId }),
+    });
+    const json = await res.json();
+    if (!json.success) throw new Error(json.error || 'Delete failed');
   };
 
   const toggleFavorite = async (listingId) => {
@@ -79,5 +91,13 @@ export function useMarketplaceApi(token) {
     });
   };
 
-  return { searchListings, createListing, updateListing, toggleFavorite, uploadFile, trackDownload };
+  return {
+    searchListings,
+    createListing,
+    updateListing,
+    deleteListing,
+    toggleFavorite,
+    uploadFile,
+    trackDownload,
+  };
 }
