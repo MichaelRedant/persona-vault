@@ -14,7 +14,8 @@ try {
   $check = $pdo->prepare("SELECT seller_user_id FROM marketplace_listings WHERE id=?");
   $check->execute([$id]);
   $owner = $check->fetchColumn();
-  if (!$owner || (int)$owner !== (int)$user_id) {
+  if (!$owner) { http_response_code(404); echo json_encode(['success'=>false,'error'=>'Listing not found']); exit; }
+  if ((int)$owner !== (int)$user_id && !$is_admin) {
     http_response_code(403); echo json_encode(['success'=>false,'error'=>'Not allowed']); exit;
   }
 

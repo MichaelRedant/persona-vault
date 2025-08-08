@@ -38,3 +38,8 @@ if (isset($_GET['workspace_id'])) {
         }
     }
 }
+
+// Fetch admin status for further permission checks
+$stmt = $pdo->prepare('SELECT is_admin FROM users WHERE id = ?');
+$stmt->execute([$user_id]);
+$is_admin = (bool) $stmt->fetchColumn();

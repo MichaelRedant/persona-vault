@@ -24,15 +24,10 @@ try {
         exit;
     }
 
-    if ((int)$owner !== (int)$user_id) {
-        $chk = $pdo->prepare('SELECT is_admin FROM users WHERE id = ?');
-        $chk->execute([$user_id]);
-        $isAdmin = (bool)$chk->fetchColumn();
-        if (!$isAdmin) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Not allowed']);
-            exit;
-        }
+    if ((int)$owner !== (int)$user_id && !$is_admin) {
+        http_response_code(403);
+        echo json_encode(['success' => false, 'error' => 'Not allowed']);
+        exit;
     }
 
     $del = $pdo->prepare('DELETE FROM marketplace_listings WHERE id = ?');

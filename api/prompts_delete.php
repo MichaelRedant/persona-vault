@@ -13,9 +13,14 @@ if ($id <= 0) {
 }
 
 try {
-    // ✅ Controleer of prompt bestaat en behoort tot gebruiker + workspace
-    $checkStmt = $pdo->prepare("SELECT id FROM prompts WHERE id = ? AND user_id = ? AND workspace_id = ?");
-    $checkStmt->execute([$id, $user_id, $workspace_id]);
+    // ✅ Controleer of prompt bestaat en behoort tot gebruiker + workspace (admins mogen alles)
+    if ($is_admin) {
+        $checkStmt = $pdo->prepare("SELECT id FROM prompts WHERE id = ? AND workspace_id = ?");
+        $checkStmt->execute([$id, $workspace_id]);
+    } else {
+        $checkStmt = $pdo->prepare("SELECT id FROM prompts WHERE id = ? AND user_id = ? AND workspace_id = ?");
+        $checkStmt->execute([$id, $user_id, $workspace_id]);
+    }
     $exists = $checkStmt->fetchColumn();
 
     if (!$exists) {
