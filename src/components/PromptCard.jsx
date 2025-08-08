@@ -75,6 +75,7 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
           />
 
           <Button
+
             onClick={() => handleCopy(prompt.content)}
             variant="secondary"
             icon={<FiCopy className="w-5 h-5" />}
@@ -83,6 +84,7 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
           />
 
           <Button
+
             onClick={() => onUpload(prompt)}
             variant="primary"
             icon={<FiUploadCloud className="w-5 h-5" />}
@@ -93,6 +95,7 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
           <CardActionsDropdown
             actions={[
               {
+
                 label: 'Edit',
                 icon: <FiEdit2 className="w-5 h-5" />,
                 onClick: () => onEdit(prompt),

@@ -24,6 +24,7 @@ export default function CardActionsDropdown({ actions = [] }) {
     };
   }, [open]);
 
+
   useEffect(() => {
     const card = dropdownRef.current?.closest('.card-container');
     if (card) {
@@ -45,7 +46,9 @@ export default function CardActionsDropdown({ actions = [] }) {
       </button>
 
       {open && (
+
         <div className="absolute right-0 mt-2 w-48 origin-top-right bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg z-50 p-2 space-y-1">
+
           {actions.map((action, idx) => (
             <button
               key={idx}

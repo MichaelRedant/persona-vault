@@ -505,9 +505,11 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
     </div>
   </div>
   <div className="max-w-screen-xl mx-auto px-2 sm:px-4 mt-1">
+
     <Link to="/marketplace" className="text-xs text-blue-600 dark:text-blue-400 hover:underline">
       Marketplace
     </Link>
+
   </div>
   </>
 )}

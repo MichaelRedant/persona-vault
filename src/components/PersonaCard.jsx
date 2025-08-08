@@ -105,6 +105,7 @@ export default function PersonaCard({
           />
 
           <Button
+
             onClick={() => handleCopy(persona.description)}
             variant="secondary"
             icon={<FiCopy />}
@@ -113,6 +114,7 @@ export default function PersonaCard({
           />
 
           <Button
+
             onClick={() => onUpload(persona)}
             variant="primary"
             icon={<FiUploadCloud />}
@@ -123,6 +125,7 @@ export default function PersonaCard({
           <CardActionsDropdown
             actions={[
               {
+
                 label: 'Edit',
                 icon: <FiEdit2 />,
                 onClick: () => onEdit(persona),
