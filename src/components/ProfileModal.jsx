@@ -7,6 +7,7 @@ import OnboardingChecklist from './OnboardingChecklist';
 import Input from './Input';
 
 export default function ProfileModal({
+  token,
   decodedToken,
   onLogout,
   onClose,
@@ -29,15 +30,34 @@ export default function ProfileModal({
   const [profileEmail, setProfileEmail] = useState('');
   const [role, setRole] = useState('');
   const [photo, setPhoto] = useState('');
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState('');
 
-  // Load stored profile info
+  // Fetch stored profile info from API
   useEffect(() => {
-    setName(localStorage.getItem('vault_profile_name') || username || '');
-    setAddress(localStorage.getItem('vault_profile_address') || '');
-    setProfileEmail(localStorage.getItem('vault_profile_email') || email || '');
-    setRole(localStorage.getItem('vault_profile_role') || '');
-    setPhoto(localStorage.getItem('vault_profile_photo') || '');
-  }, [username, email]);
+    async function loadProfile() {
+      try {
+        const res = await fetch('/api/profile_get.php', {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        const data = await res.json();
+        if (data.profile) {
+          setName(data.profile.profile_name || username || '');
+          setAddress(data.profile.address || '');
+          setProfileEmail(data.profile.email || email || '');
+          setRole(data.profile.role || '');
+          setPhoto(data.profile.photo || '');
+        }
+      } catch (e) {
+        console.error('Failed to load profile', e);
+      }
+    }
+    if (token) {
+      loadProfile();
+    }
+  }, [token, username, email]);
 
   const handlePhotoChange = (e) => {
     const file = e.target.files?.[0];
@@ -50,17 +70,44 @@ export default function ProfileModal({
     reader.readAsDataURL(file);
   };
 
-  const handleSave = (e) => {
+  const handleSave = async (e) => {
     e.preventDefault();
-    localStorage.setItem('vault_profile_name', name);
-    localStorage.setItem('vault_profile_address', address);
-    localStorage.setItem('vault_profile_email', profileEmail);
-    localStorage.setItem('vault_profile_role', role);
-    if (photo) {
-      localStorage.setItem('vault_profile_photo', photo);
+    setError('');
+    if (newPassword && newPassword !== confirmPassword) {
+      setError('New passwords do not match');
+      return;
     }
-    localStorage.setItem('vault_onboard_completedProfile', '1');
-    setActiveTab('overview');
+    try {
+      const res = await fetch('/api/profile_update.php', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          name,
+          address,
+          email: profileEmail,
+          role,
+          photo,
+          currentPassword,
+          newPassword
+        })
+      });
+      const data = await res.json();
+      if (data.error) {
+        setError(data.error);
+        return;
+      }
+      localStorage.setItem('vault_onboard_completedProfile', '1');
+      setActiveTab('overview');
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (err) {
+      console.error('Failed to save profile', err);
+      setError('Failed to save profile');
+    }
   };
 
   // ✅ Auto-mark onboarding stappen op basis van je data
@@ -237,6 +284,25 @@ export default function ProfileModal({
                 />
               )}
             </div>
+            {error && <p className="text-red-500 text-sm">{error}</p>}
+            <Input
+              label="Current password"
+              type="password"
+              value={currentPassword}
+              onChange={(e) => setCurrentPassword(e.target.value)}
+            />
+            <Input
+              label="New password"
+              type="password"
+              value={newPassword}
+              onChange={(e) => setNewPassword(e.target.value)}
+            />
+            <Input
+              label="Confirm new password"
+              type="password"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+            />
             <div className="flex justify-end space-x-2 pt-2">
               <Button
                 variant="outline"
