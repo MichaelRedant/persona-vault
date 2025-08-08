@@ -40,7 +40,7 @@ export default function AddCollectionModal({ isOpen, onClose, onAdd }) {
         </button>
 
         {/* Modal title */}
-        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Add New Collection</h3>
+        <h3 className="text-xl font-bold text-gray-900 dark:text-white">Add new collection</h3>
 
         {/* Form */}
         <form onSubmit={handleSubmit} className="flex flex-col space-y-4">
