@@ -6,7 +6,9 @@ export function useMarketplaceApi(token) {
 
   const searchListings = async (params = {}) => {
     const qs = new URLSearchParams(params).toString();
-    const res = await fetch(`${BASE}/marketplace/listings_search.php?${qs}`);
+    const res = await fetch(`${BASE}/marketplace/listings_search.php?${qs}`, {
+      headers: { ...auth },
+    });
     const json = await res.json();
     if (!json.success) throw new Error(json.error || 'Search failed');
     return json.items || [];

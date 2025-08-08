@@ -1,8 +1,9 @@
 // src/pages/Marketplace.jsx
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import ListingCard from '../components/ListingCard';
 
+import { jwtDecode } from 'jwt-decode';
+import ListingCard from '../components/ListingCard';
 import ListingManageModal from '../components/ListingManageModal';
 
 import Header from '../components/Header';
@@ -14,19 +15,29 @@ export default function Marketplace({ token }) {
   const [manageOpen, setManageOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const { searchListings, trackDownload, uploadFile, createListing, updateListing, deleteListing } = useMarketplaceApi(token);
 
-
   const load = useCallback(async () => {
     const data = await searchListings({ q, limit: 24, sort: 'recent' });
-    const mapped = data.map(d => ({
+    const mapped = data.map((d) => ({
       ...d,
       cover_url: d.cover_file_id ? `${window.location.origin}/uploads/seed/cover-persona-starter.png` : null,
       is_owner: d.is_owner,
     }));
     setItems(mapped);
   }, [q, searchListings]);
+
+  useEffect(() => {
+    if (!token) return;
+    try {
+      const decoded = jwtDecode(token);
+      setIsAdmin(!!decoded.is_admin);
+    } catch {
+      setIsAdmin(false);
+    }
+  }, [token]);
 
   useEffect(() => {
     load();
@@ -52,7 +63,9 @@ export default function Marketplace({ token }) {
           localStorage.removeItem('vault_jwt_token');
           window.location.href = '/vault';
         }}
-        isAdmin={false}
+
+        isAdmin={isAdmin}
+
         onOpenAdminPanel={() => {}}
         onToggleSidebar={() => {}}
       />
@@ -93,17 +106,24 @@ export default function Marketplace({ token }) {
 
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-            {items.map(it => (
+            {items.map((it) => (
               <ListingCard
                 key={it.id}
                 item={it}
+                canManage={it.is_owner || isAdmin}
+
                 onDownload={async () => {
                   await trackDownload(it.id);
                   if (it.file_url) window.open(it.file_url, '_blank');
                 }}
-                onClick={()=> alert('TODO: listing details')}
-                onEdit={()=>{ setEditing(it); setManageOpen(true); }}
-                onDelete={async ()=>{
+
+                onClick={() => alert('TODO: listing details')}
+                onEdit={() => {
+                  setEditing(it);
+                  setManageOpen(true);
+                }}
+                onDelete={async () => {
+
                   if (confirm('Delete this listing?')) {
                     await deleteListing(it.id);
                     await load();
