@@ -2,7 +2,9 @@
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import ListingCard from '../components/ListingCard';
+
 import ListingManageModal from '../components/ListingManageModal';
+
 import Header from '../components/Header';
 import { useMarketplaceApi } from '../hooks/useMarketplaceApi';
 
@@ -12,7 +14,9 @@ export default function Marketplace({ token }) {
   const [manageOpen, setManageOpen] = useState(false);
   const [editing, setEditing] = useState(null);
 
+
   const { searchListings, trackDownload, uploadFile, createListing, updateListing, deleteListing } = useMarketplaceApi(token);
+
 
   const load = useCallback(async () => {
     const data = await searchListings({ q, limit: 24, sort: 'recent' });
@@ -79,11 +83,14 @@ export default function Marketplace({ token }) {
             </button>
             <button
               className="px-4 py-2 rounded-full bg-pink-500 text-white hover:bg-pink-600"
+
               onClick={()=>{ setEditing(null); setManageOpen(true); }}
+
             >
               + New Listing
             </button>
           </div>
+
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {items.map(it => (
@@ -129,6 +136,7 @@ export default function Marketplace({ token }) {
               await deleteListing(id);
               setManageOpen(false);
               await load();
+
             }}
           />
         </div>

@@ -1,8 +1,10 @@
 // src/components/ListingCard.jsx
+
 import CardActionsDropdown from './CardActionsDropdown';
 import { FiEdit2, FiTrash2 } from 'react-icons/fi';
 
 export default function ListingCard({ item, onDownload, onClick, onEdit, onDelete }) {
+
   const price = item.price_cents > 0 ? `€ ${(item.price_cents/100).toFixed(2)}` : 'Free';
 
   return (
