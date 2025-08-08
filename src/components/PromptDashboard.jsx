@@ -4,10 +4,12 @@ import PromptCard from './PromptCard';
 import Button from './Button';
 import RevisionsModal from './RevisionsModal'; // 👈 nieuwe component
 import Tooltip from './Tooltip';
+import ListingManageModal from './ListingManageModal';
 
 
 import { useState, useEffect, useRef } from 'react';
 import { usePromptRevisionsApi } from '../hooks/usePromptRevisionsApi';
+import { useMarketplaceApi } from '../hooks/useMarketplaceApi';
 
 export default function PromptDashboard({
   prompts,
@@ -32,6 +34,10 @@ export default function PromptDashboard({
 
   const [selectedPromptForRevisions, setSelectedPromptForRevisions] = useState(null);
   const { revisions, loading: loadingRevisions, fetchRevisions } = usePromptRevisionsApi(token, workspaceId);
+
+  const { createListing, uploadFile } = useMarketplaceApi(token);
+  const [uploadingPrompt, setUploadingPrompt] = useState(null);
+  const stripHtml = (html = '') => html.replace(/<[^>]*>/g, '');
 
   const filteredPrompts = prompts
     .filter((prompt) =>
@@ -140,7 +146,7 @@ export default function PromptDashboard({
               onEdit={startEdit}
               onViewRevisions={() => openRevisionsModal(prompt)}
               onShowToast={onShowToast}
-              onUpload={() => onShowToast('Uploaded to marketplace!')}
+              onUpload={(prompt) => setUploadingPrompt(prompt)}
             />
           ))}
         </div>
@@ -191,6 +197,24 @@ export default function PromptDashboard({
           await fetchPrompts();
           onShowToast('Prompt rolled back to revision.');
           setSelectedPromptForRevisions(null);
+        }}
+      />
+
+      <ListingManageModal
+        open={!!uploadingPrompt}
+        onClose={() => setUploadingPrompt(null)}
+        initial={uploadingPrompt ? {
+          title: uploadingPrompt.title,
+          description: stripHtml(uploadingPrompt.content),
+          item_type: 'prompt',
+          item_id: uploadingPrompt.id,
+          tags: Array.isArray(uploadingPrompt.tags) ? uploadingPrompt.tags.join(',') : (uploadingPrompt.tags || ''),
+        } : {}}
+        uploadFn={uploadFile}
+        onSave={async (payload) => {
+          await createListing({ ...payload, currency: 'EUR', visibility: 'public' });
+          setUploadingPrompt(null);
+          onShowToast('Uploaded to marketplace!');
         }}
       />
     </div>

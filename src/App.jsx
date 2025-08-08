@@ -637,8 +637,7 @@ const handleUpdateTags = ({ action, targetTag, newTag, sourceTag }) => {
   setIsPersonaModalOpen(true);
   setGlobalToastMessage(`Editing persona "${fullPersona.name}"...`);
 }}
-
-
+  token={token}
 />
 
 

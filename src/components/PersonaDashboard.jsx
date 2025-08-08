@@ -5,6 +5,8 @@ import Button from './Button';
 import { useState, useEffect, useRef } from 'react';
 import { usePersonaRevisionsApi } from '../hooks/usePersonaRevisionsApi';
 import RevisionsModal from './RevisionsModal';
+import ListingManageModal from './ListingManageModal';
+import { useMarketplaceApi } from '../hooks/useMarketplaceApi';
 
 export default function PersonaDashboard({
   personas,
@@ -31,6 +33,10 @@ const [selectedPersonaForRevisions, setSelectedPersonaForRevisions] = useState(n
 const loadMoreRef = useRef();
 
 const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevisionsApi(token, workspaceId);
+
+const { createListing, uploadFile } = useMarketplaceApi(token);
+const [uploadingPersona, setUploadingPersona] = useState(null);
+const stripHtml = (html = '') => html.replace(/<[^>]*>/g, '');
 
   const openRevisionsModal = async (persona) => {
   await fetchRevisions(persona.id);
@@ -194,7 +200,7 @@ const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevis
               onEdit={startEdit}
               onShowToast={onShowToast}
               onViewRevisions={() => openRevisionsModal(persona)}
-              onUpload={() => onShowToast('Uploaded to marketplace!')}
+              onUpload={(p) => setUploadingPersona(p)}
             />
           ))}
         </div>
@@ -240,7 +246,7 @@ const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevis
 />
       </Modal>
 
-      <RevisionsModal
+  <RevisionsModal
   isOpen={!!selectedPersonaForRevisions}
   onClose={() => setSelectedPersonaForRevisions(null)}
   revisions={revisions}
@@ -259,6 +265,24 @@ const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevis
     setSelectedPersonaForRevisions(null);
   }}
 />
+
+      <ListingManageModal
+        open={!!uploadingPersona}
+        onClose={() => setUploadingPersona(null)}
+        initial={uploadingPersona ? {
+          title: uploadingPersona.name,
+          description: stripHtml(uploadingPersona.description),
+          item_type: 'persona',
+          item_id: uploadingPersona.id,
+          tags: Array.isArray(uploadingPersona.tags) ? uploadingPersona.tags.join(',') : (uploadingPersona.tags || ''),
+        } : {}}
+        uploadFn={uploadFile}
+        onSave={async (payload) => {
+          await createListing({ ...payload, currency: 'EUR', visibility: 'public' });
+          setUploadingPersona(null);
+          onShowToast('Uploaded to marketplace!');
+        }}
+      />
 
     </div>
   );
