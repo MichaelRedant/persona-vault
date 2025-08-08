@@ -18,7 +18,8 @@ export default function PromptDashboard({
   showFavoritesOnly,
   sortOption,
   onShowToast,
-  token
+  token,
+  workspaceId
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState(null);
@@ -27,7 +28,7 @@ export default function PromptDashboard({
   const loadMoreRef = useRef();
 
   const [selectedPromptForRevisions, setSelectedPromptForRevisions] = useState(null);
-  const { revisions, loading: loadingRevisions, fetchRevisions } = usePromptRevisionsApi(token);
+  const { revisions, loading: loadingRevisions, fetchRevisions } = usePromptRevisionsApi(token, workspaceId);
 
   const filteredPrompts = prompts
     .filter((prompt) =>
