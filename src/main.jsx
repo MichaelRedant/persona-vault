@@ -20,8 +20,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
 
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
+    const swUrl = `${import.meta.env.BASE_URL.replace(/\/?$/, '/') }sw.js`;
     navigator.serviceWorker
-      .register(`${import.meta.env.BASE_URL}sw.js`)
+      .register(swUrl)
       .catch((err) => console.error('Service worker registration failed:', err));
   });
 }

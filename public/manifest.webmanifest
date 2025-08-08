@@ -1,8 +1,10 @@
 {
   "name": "Persona Vault",
   "short_name": "Vault",
-  "start_url": "/vault",
-  "scope": "/vault",
+
+  "start_url": "/vault/",
+  "scope": "/vault/",
+
   "display": "standalone",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",

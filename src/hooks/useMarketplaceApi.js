@@ -1,17 +1,24 @@
 // src/hooks/useMarketplaceApi.js
-const BASE = import.meta.env.VITE_API_BASE_URL;
+const BASE = (import.meta.env.VITE_API_BASE_URL || '/vault/api').replace(/\/$/, '');
 
 export function useMarketplaceApi(token) {
   const auth = token ? { Authorization: `Bearer ${token}` } : {};
 
   const searchListings = async (params = {}) => {
     const qs = new URLSearchParams(params).toString();
-    const res = await fetch(`${BASE}/marketplace/listings_search.php?${qs}`, {
-      headers: { ...auth },
-    });
-    const json = await res.json();
-    if (!json.success) throw new Error(json.error || 'Search failed');
-    return json.items || [];
+
+    try {
+      const res = await fetch(`${BASE}/marketplace/listings_search.php?${qs}`, {
+        headers: { ...auth },
+      });
+      const json = await res.json();
+      if (!json.success) throw new Error(json.error || 'Search failed');
+      return json.items || [];
+    } catch (err) {
+      console.error('Search failed', err);
+      return [];
+    }
+
   };
 
   const createListing = async (payload) => {

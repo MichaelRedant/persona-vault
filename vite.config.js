@@ -6,6 +6,14 @@ const basePath = '/vault'; // ← update dit als je in root zou willen publicere
 
 export default defineConfig({
   base: basePath,
+  server: {
+    proxy: {
+      '/vault/api': {
+        target: 'https://www.xinudesign.be',
+        changeOrigin: true,
+      },
+    },
+  },
   plugins: [
     react(),
     VitePWA({

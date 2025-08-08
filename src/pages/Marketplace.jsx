@@ -17,6 +17,7 @@ export default function Marketplace({ token }) {
 
   const [isAdmin, setIsAdmin] = useState(false);
 
+
   const { searchListings, trackDownload, uploadFile, createListing, updateListing, deleteListing } = useMarketplaceApi(token);
 
   const load = useCallback(async () => {
