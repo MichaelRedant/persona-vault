@@ -1,9 +1,34 @@
 import { useState, useEffect } from 'react';
 
+import Tooltip from './Tooltip';
+
 const defaultTasks = [
-  { key: 'completedProfile', label: 'Complete your profile' },
-  { key: 'createdPersona', label: 'Create your first persona' },
-  { key: 'createdPrompt', label: 'Create your first prompt' }
+  {
+    key: 'completedProfile',
+    label: 'Complete your profile',
+    hint: 'Add your personal details and avatar.'
+  },
+  {
+    key: 'createdPersona',
+    label: 'Create your first persona',
+    hint: 'Build a persona to tailor prompts.'
+  },
+  {
+    key: 'createdPrompt',
+    label: 'Create your first prompt',
+    hint: 'Store prompts to reuse them quickly.'
+  },
+  {
+    key: 'invitedTeammate',
+    label: 'Invite a teammate',
+    hint: 'Collaborate by inviting colleagues to your workspace.'
+  },
+  {
+    key: 'exploredTemplates',
+    label: 'Explore template library',
+    hint: 'Discover ready-made prompt templates.'
+  }
+
 ];
 
 export default function OnboardingChecklist() {
@@ -33,7 +58,11 @@ export default function OnboardingChecklist() {
       <ul className="mt-4 space-y-2">
         {tasks.map(task => (
           <li key={task.key} className="flex items-center justify-between">
-            <span className={task.done ? 'line-through text-gray-400' : ''}>{task.label}</span>
+
+            <Tooltip text={task.hint}>
+              <span className={task.done ? 'line-through text-gray-400' : ''}>{task.label}</span>
+            </Tooltip>
+
             {!task.done && (
               <button
                 className="text-xs text-blue-600 hover:underline"

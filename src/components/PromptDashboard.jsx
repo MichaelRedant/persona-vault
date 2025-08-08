@@ -4,7 +4,7 @@ import PromptCard from './PromptCard';
 import Button from './Button';
 import RevisionsModal from './RevisionsModal'; // 👈 nieuwe component
 import Tooltip from './Tooltip';
-import OnboardingChecklist from './OnboardingChecklist';
+
 import { useState, useEffect, useRef } from 'react';
 import { usePromptRevisionsApi } from '../hooks/usePromptRevisionsApi';
 
