@@ -52,10 +52,10 @@ export default function RevisionsModal({
 
   return (
     <Modal isOpen={isOpen} onClose={onClose} size="full" className="w-[95vw]">
-      <div className="w-[95vw] max-h-[90vh] bg-white dark:bg-gray-900 p-6 rounded-xl overflow-hidden flex flex-col gap-6">
+      <div className="w-[95vw] max-h-[90vh] bg-gradient-to-b from-white to-gray-50 dark:from-gray-900 dark:to-gray-800 p-6 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden flex flex-col gap-6">
 
 
-        <h2 className="text-2xl font-bold text-gray-800 dark:text-white">
+        <h2 className="text-2xl font-bold text-gray-800 dark:text-white tracking-tight">
       {label} Revision History
     </h2>
 
@@ -75,7 +75,7 @@ export default function RevisionsModal({
                 {revisions.map((rev) => (
                   <li
                     key={rev.id}
-                    className={`border rounded-lg p-3 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 ${
+                    className={`border rounded-lg p-3 dark:border-gray-700 bg-gray-50 dark:bg-gray-800 transition hover:bg-gray-100 dark:hover:bg-gray-700 ${
                       selectedRevision?.id === rev.id ? 'ring-2 ring-blue-500' : ''
                     }`}
                   >

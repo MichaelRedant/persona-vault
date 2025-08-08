@@ -679,6 +679,7 @@ isModalOpen={isPersonaModalOpen}
 setIsModalOpen={setIsPersonaModalOpen}
 setEditingPersona={setEditingPersona}
 token={token}
+workspaceId={activeWorkspaceId}
 
       />
     </div>
@@ -719,6 +720,7 @@ token={token}
         sortOption={promptSortOption}
         setSortOption={setPromptSortOption}
         compactMode={compactMode}
+        workspaceId={activeWorkspaceId}
       />
     </div>
 
