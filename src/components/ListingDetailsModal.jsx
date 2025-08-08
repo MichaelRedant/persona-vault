@@ -1,8 +1,15 @@
 // src/components/ListingDetailsModal.jsx
-import React from 'react';
+
+import { useState } from 'react';
 
 export default function ListingDetailsModal({ item, onClose, onDownload }) {
   const price = item.price_cents > 0 ? `€ ${(item.price_cents / 100).toFixed(2)}` : 'Free';
+  const [expanded, setExpanded] = useState(false);
+  const maxLength = 160;
+  const description = item.description || '';
+  const isLong = description.length > maxLength;
+  const displayText = expanded || !isLong ? description : `${description.slice(0, maxLength)}...`;
+
 
   return (
     <div className="absolute left-0 top-full mt-2 w-full z-50">
@@ -17,7 +24,31 @@ export default function ListingDetailsModal({ item, onClose, onDownload }) {
         {item.seller_name && (
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">By {item.seller_name}</p>
         )}
+
+        <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 whitespace-pre-line">
+          {displayText}
+          {isLong && !expanded && (
+            <button
+              type="button"
+              className="ml-1 text-indigo-500 hover:underline"
+              onClick={() => setExpanded(true)}
+            >
+              Read more...
+            </button>
+          )}
+          {isLong && expanded && (
+            <button
+              type="button"
+              className="ml-1 text-indigo-500 hover:underline"
+              onClick={() => setExpanded(false)}
+            >
+              Less
+            </button>
+          )}
+        </p>
+
         <p className="text-sm text-gray-600 dark:text-gray-300 mb-4 whitespace-pre-line">{item.description}</p>
+
         <div className="flex items-center justify-between">
           <span className="text-sm font-semibold">{price}</span>
           <button
