@@ -1,9 +1,11 @@
 // src/pages/Marketplace.jsx
 import { useEffect, useState, useCallback } from 'react';
 import { Link } from 'react-router-dom';
+
 import { jwtDecode } from 'jwt-decode';
 import ListingCard from '../components/ListingCard';
 import ListingManageModal from '../components/ListingManageModal';
+
 import Header from '../components/Header';
 import { useMarketplaceApi } from '../hooks/useMarketplaceApi';
 
@@ -12,6 +14,7 @@ export default function Marketplace({ token }) {
   const [q, setQ] = useState('');
   const [manageOpen, setManageOpen] = useState(false);
   const [editing, setEditing] = useState(null);
+
   const [isAdmin, setIsAdmin] = useState(false);
 
   const { searchListings, trackDownload, uploadFile, createListing, updateListing, deleteListing } = useMarketplaceApi(token);
@@ -60,7 +63,9 @@ export default function Marketplace({ token }) {
           localStorage.removeItem('vault_jwt_token');
           window.location.href = '/vault';
         }}
+
         isAdmin={isAdmin}
+
         onOpenAdminPanel={() => {}}
         onToggleSidebar={() => {}}
       />
@@ -91,11 +96,14 @@ export default function Marketplace({ token }) {
             </button>
             <button
               className="px-4 py-2 rounded-full bg-pink-500 text-white hover:bg-pink-600"
+
               onClick={()=>{ setEditing(null); setManageOpen(true); }}
+
             >
               + New Listing
             </button>
           </div>
+
 
           <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {items.map((it) => (
@@ -103,16 +111,19 @@ export default function Marketplace({ token }) {
                 key={it.id}
                 item={it}
                 canManage={it.is_owner || isAdmin}
+
                 onDownload={async () => {
                   await trackDownload(it.id);
                   if (it.file_url) window.open(it.file_url, '_blank');
                 }}
+
                 onClick={() => alert('TODO: listing details')}
                 onEdit={() => {
                   setEditing(it);
                   setManageOpen(true);
                 }}
                 onDelete={async () => {
+
                   if (confirm('Delete this listing?')) {
                     await deleteListing(it.id);
                     await load();
@@ -145,6 +156,7 @@ export default function Marketplace({ token }) {
               await deleteListing(id);
               setManageOpen(false);
               await load();
+
             }}
           />
         </div>
