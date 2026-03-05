@@ -1,59 +1,78 @@
-import { useState, useCallback } from 'react';
+import { useCallback, useState } from 'react';
+import { apiRequest } from '../api/client';
+
+function normalizeWorkspaceRole(role) {
+  const normalized = String(role || '').toLowerCase();
+  if (normalized === 'admin' || normalized === 'editor' || normalized === 'viewer') {
+    return normalized;
+  }
+  return 'viewer';
+}
 
 export function useWorkspacesApi(token, onToast) {
   const [workspaces, setWorkspaces] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const baseUrl = import.meta.env.VITE_API_BASE_URL;
-
   const fetchWorkspaces = useCallback(async () => {
+    if (!token) {
+      setWorkspaces([]);
+      return [];
+    }
+
     setLoading(true);
     setError(null);
+
     try {
-      const response = await fetch(`${baseUrl}/workspaces_get.php`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
+      const result = await apiRequest('workspaces_get.php', { token });
+      if (!result?.success || !Array.isArray(result.workspaces)) {
+        throw new Error(result?.message || 'Failed to fetch workspaces');
+      }
 
-      const result = await response.json();
-      if (!result.success) throw new Error(result.message || 'Failed to fetch workspaces');
+      const normalized = result.workspaces.map((workspace) => ({
+        ...workspace,
+        id: Number(workspace.id),
+        owner_id: Number(workspace.owner_id),
+        role: normalizeWorkspaceRole(workspace.role),
+        is_owner: Number(workspace.is_owner) === 1,
+      }));
 
-      setWorkspaces(result.workspaces);
-      return result.workspaces;
+      setWorkspaces(normalized);
+      return normalized;
     } catch (err) {
-      setError(err.message);
+      setError(err);
       onToast?.('Error fetching workspaces');
-      console.error(err);
       return [];
     } finally {
       setLoading(false);
     }
-  }, [baseUrl, token, onToast]);
+  }, [token, onToast]);
 
   const createWorkspace = useCallback(async (name) => {
+    if (!token) {
+      onToast?.('Authentication required');
+      return false;
+    }
+
     try {
-      const response = await fetch(`${baseUrl}/workspaces_create.php`, {
+      const result = await apiRequest('workspaces_create.php', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ name })
+        token,
+        body: { name },
       });
 
-      const result = await response.json();
-      if (!result.success) throw new Error(result.message || 'Workspace creation failed');
+      if (!result?.success) {
+        throw new Error(result?.message || 'Workspace creation failed');
+      }
 
-      // fetch opnieuw na create
       await fetchWorkspaces();
       onToast?.('Workspace created successfully!');
-    } catch (err) {
+      return true;
+    } catch {
       onToast?.('Failed to create workspace');
-      console.error(err);
+      return false;
     }
-  }, [baseUrl, token, fetchWorkspaces, onToast]);
+  }, [token, fetchWorkspaces, onToast]);
 
   return {
     workspaces,
@@ -61,6 +80,6 @@ export function useWorkspacesApi(token, onToast) {
     loading,
     error,
     fetchWorkspaces,
-    createWorkspace
+    createWorkspace,
   };
 }

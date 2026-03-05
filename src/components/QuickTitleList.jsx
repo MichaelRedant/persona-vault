@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { FiCopy } from 'react-icons/fi';
 
-export default function QuickTitleList({ personas, prompts }) {
+export default function QuickTitleList({ personas, prompts, onShowToast }) {
   const [activeTab, setActiveTab] = useState('personas');
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
-    alert(`Titel gekopieerd: ${text}`);
+    onShowToast?.(`Titel gekopieerd: ${text}`);
   };
 
   const titles = activeTab === 'personas'
@@ -33,13 +33,16 @@ export default function QuickTitleList({ personas, prompts }) {
       <ul className="max-h-60 overflow-y-auto divide-y divide-gray-200 dark:divide-gray-700 text-sm">
         {titles.length === 0 && <li className="text-gray-500 text-center py-2">Geen titels gevonden.</li>}
         {titles.map((title, index) => (
-          <li
-            key={index}
-            className="flex items-center justify-between py-2 px-3 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer rounded"
-            onClick={() => handleCopy(title)}
-          >
-            <span className="truncate">{title}</span>
-            <FiCopy className="w-4 h-4 text-gray-400" />
+          <li key={index}>
+            <button
+              type="button"
+              className="w-full flex items-center justify-between py-2 px-3 hover:bg-gray-100 dark:hover:bg-gray-700 rounded focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+              onClick={() => handleCopy(title)}
+              aria-label={`Kopieer titel ${title}`}
+            >
+              <span className="truncate">{title}</span>
+              <FiCopy className="w-4 h-4 text-gray-400" />
+            </button>
           </li>
         ))}
       </ul>

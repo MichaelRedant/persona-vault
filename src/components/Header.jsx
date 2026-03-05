@@ -27,7 +27,9 @@ export default function Header({
   onLogout,
   isAdmin,
   onOpenAdminPanel,
-  onToggleSidebar
+  onToggleSidebar,
+  onShowToast,
+  canEditWorkspace = true,
 }) {
   const [isAboutOpen, setIsAboutOpen] = useState(false);
   const [mergeModalOpen, setMergeModalOpen] = useState(false);
@@ -51,6 +53,11 @@ export default function Header({
   };
 
   const importData = () => {
+    if (!canEditWorkspace) {
+      onShowToast?.('Viewer role cannot import data in this workspace.');
+      return;
+    }
+
     const input = document.createElement('input');
     input.type = 'file';
     input.accept = 'application/json';
@@ -64,9 +71,8 @@ export default function Header({
           const importedData = JSON.parse(e.target.result);
           setPendingImportData(importedData);
           setMergeModalOpen(true);
-        } catch (error) {
-          console.error('Error importing:', error);
-          alert('Error importing file');
+        } catch {
+          onShowToast?.('Error importing file');
         }
       };
       reader.readAsText(file);
@@ -83,9 +89,10 @@ export default function Header({
             <button
               type="button"
               onClick={onToggleSidebar}
+              aria-label="Toggle sidebar navigation"
               className="md:hidden p-2 rounded-md text-gray-700 dark:text-gray-200 focus:outline-none"
             >
-              <FiMenu className="w-6 h-6" />
+              <FiMenu className="w-6 h-6" aria-hidden="true" />
             </button>
             <img src={logoLight} alt="Persona Vault Logo" className="h-12 w-auto block dark:hidden" />
             <img src={logoDark} alt="Persona Vault Logo" className="h-12 w-auto hidden dark:block" />
@@ -100,8 +107,11 @@ export default function Header({
 
             {/* Menu */}
             <Menu as="div" className="relative inline-block text-left">
-              <Menu.Button className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition">
-                <HiDotsVertical className="w-5 h-5" />
+              <Menu.Button
+                aria-label="Open workspace menu"
+                className="flex items-center justify-center w-10 h-10 rounded-full bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-300 dark:hover:bg-gray-600 transition"
+              >
+                <HiDotsVertical className="w-5 h-5" aria-hidden="true" />
               </Menu.Button>
 
               <Menu.Items className="absolute right-0 mt-2 w-48 origin-top-right rounded-md bg-white dark:bg-gray-800 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none z-50">
@@ -117,17 +127,19 @@ export default function Header({
                       </button>
                     )}
                   </Menu.Item>
-                  <Menu.Item>
-                    {({ active }) => (
-                      <button
-                        onClick={importData}
-                        className={`${active ? 'bg-gray-100 dark:bg-gray-700' : ''} group flex items-center w-full px-4 py-2 text-sm`}
-                      >
-                        <FiUpload className="mr-3 w-5 h-5" />
-                        Import
-                      </button>
-                    )}
-                  </Menu.Item>
+                  {canEditWorkspace && (
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={importData}
+                          className={`${active ? 'bg-gray-100 dark:bg-gray-700' : ''} group flex items-center w-full px-4 py-2 text-sm`}
+                        >
+                          <FiUpload className="mr-3 w-5 h-5" />
+                          Import
+                        </button>
+                      )}
+                    </Menu.Item>
+                  )}
 
                   <div className="border-t border-gray-200 dark:border-gray-700 my-1"></div>
 
@@ -144,16 +156,18 @@ export default function Header({
                       )}
                     </Menu.Item>
                   )}
-                  <Menu.Item>
-  {({ active }) => (
-    <button
-      onClick={() => setIsTagManagerOpen(true)}
-      className={`${active ? 'bg-gray-100 dark:bg-gray-700' : ''} group flex items-center w-full px-4 py-2 text-sm`}
-    >
-      🏷 Manage Tags
-    </button>
-  )}
-</Menu.Item>
+                  {canEditWorkspace && (
+                    <Menu.Item>
+                      {({ active }) => (
+                        <button
+                          onClick={() => setIsTagManagerOpen(true)}
+                          className={`${active ? 'bg-gray-100 dark:bg-gray-700' : ''} group flex items-center w-full px-4 py-2 text-sm`}
+                        >
+                          Manage Tags
+                        </button>
+                      )}
+                    </Menu.Item>
+                  )}
 
                   <Menu.Item>
                     {({ active }) => (
@@ -229,17 +243,21 @@ export default function Header({
 
       </header>
       {/* Tag Manager Modal */}
-      <TagManagerModal
-  isOpen={isTagManagerOpen}
-  onClose={() => setIsTagManagerOpen(false)}
-  personas={personas}
-  prompts={prompts}
-  onUpdateTags={handleUpdateTags}
-/>
+      {canEditWorkspace && (
+        <TagManagerModal
+          isOpen={isTagManagerOpen}
+          onClose={() => setIsTagManagerOpen(false)}
+          personas={personas}
+          prompts={prompts}
+          onUpdateTags={handleUpdateTags}
+        />
+      )}
+
       {/* Merge / Replace Modal */}
-      <MergeOrReplaceModal
-        isOpen={mergeModalOpen}
-        onMerge={async () => {
+      {canEditWorkspace && (
+        <MergeOrReplaceModal
+          isOpen={mergeModalOpen}
+          onMerge={async () => {
           const personasToImport = Array.isArray(pendingImportData)
             ? pendingImportData
             : pendingImportData?.personas;
@@ -264,7 +282,7 @@ export default function Header({
             await fetchPrompts();
           }
 
-          alert('Import merged successfully!');
+          onShowToast?.('Import merged successfully!');
           setMergeModalOpen(false);
           setPendingImportData(null);
         }}
@@ -301,15 +319,17 @@ export default function Header({
           }
           await fetchPrompts();
 
-          alert('Import replaced successfully!');
+          onShowToast?.('Import replaced successfully!');
           setMergeModalOpen(false);
           setPendingImportData(null);
         }}
         onCancel={() => {
           setMergeModalOpen(false);
           setPendingImportData(null);
-        }}
-      />
+          }}
+        />
+      )}
     </>
   );
 }
+

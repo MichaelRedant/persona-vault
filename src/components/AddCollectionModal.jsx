@@ -1,8 +1,9 @@
-import { useState, useEffect } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { FiX, FiPlus } from 'react-icons/fi';
 
 export default function AddCollectionModal({ isOpen, onClose, onAddCollection }) {
   const [name, setName] = useState('');
+  const inputId = useId();
 
   // Reset form when modal opens/closes
   useEffect(() => {
@@ -31,10 +32,12 @@ export default function AddCollectionModal({ isOpen, onClose, onAddCollection })
       >
         {/* Close button */}
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Close add collection modal"
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
         >
-          <FiX className="text-xl" />
+          <FiX className="text-xl" aria-hidden="true" />
         </button>
 
         {/* Modal content */}
@@ -42,10 +45,11 @@ export default function AddCollectionModal({ isOpen, onClose, onAddCollection })
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="flex flex-col space-y-1">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor={inputId} className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Collection Name
             </label>
             <input
+              id={inputId}
               type="text"
               value={name}
               onChange={(e) => setName(e.target.value)}

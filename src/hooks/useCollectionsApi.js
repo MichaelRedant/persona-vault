@@ -1,7 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { apiRequest } from '../api/client';
 import { useApiErrorHandler } from './useApiErrorHandler';
-
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
 
 export function useCollectionsApi(token, onShowToast, workspaceId) {
   const [collections, setCollections] = useState([]);
@@ -10,120 +9,108 @@ export function useCollectionsApi(token, onShowToast, workspaceId) {
 
   const handleError = useApiErrorHandler(onShowToast);
 
-  // ✅ stable handleError wrapper → fix for useCallback deps
-  const stableHandleError = useCallback((err, msg) => {
-    handleError?.(err, msg);
-  }, [handleError]);
-
   const fetchCollections = useCallback(async () => {
+    if (!token || !workspaceId) {
+      setCollections([]);
+      return [];
+    }
+
     setLoading(true);
+    setError(null);
+
     try {
-      const response = await fetch(`${BASE_URL}/collections_get.php?workspace_id=${workspaceId}`, {
-
+      const data = await apiRequest('collections_get.php', {
         method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
+        token,
+        params: { workspace_id: workspaceId },
       });
-      const data = await response.json();
 
-      if (Array.isArray(data)) {
-        setCollections(data);
-      } else {
-        console.error('Expected array for collections, got:', data);
-        setCollections([]);
-        stableHandleError(new Error('Invalid API response'), 'Failed to fetch collections');
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid API response');
       }
+
+      setCollections(data);
+      return data;
     } catch (err) {
-      console.error('Failed to fetch collections:', err);
       setError(err);
       setCollections([]);
-      stableHandleError(err, 'Failed to fetch collections');
+      handleError(err, 'Failed to fetch collections');
+      return [];
     } finally {
       setLoading(false);
     }
-  }, [token, stableHandleError, workspaceId]);
+  }, [token, workspaceId, handleError]);
 
   const createCollection = useCallback(async (name) => {
     try {
-      const response = await fetch(`${BASE_URL}/collections_create.php`, {
+      const data = await apiRequest('collections_create.php', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ name, workspace_id: workspaceId }),
-
+        token,
+        body: { name, workspace_id: workspaceId },
       });
-      const data = await response.json();
-      if (data.success) {
-        await fetchCollections();
-      } else {
-        stableHandleError(new Error('API returned failure'), 'Failed to create collection');
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to create collection');
       }
+
+      await fetchCollections();
+      return true;
     } catch (err) {
-      console.error('Failed to create collection:', err);
       setError(err);
-      stableHandleError(err, 'Failed to create collection');
+      handleError(err, 'Failed to create collection');
+      return false;
     }
-  }, [token, fetchCollections, stableHandleError, workspaceId]);
+  }, [token, workspaceId, fetchCollections, handleError]);
 
   const deleteCollection = useCallback(async (id) => {
     try {
-      const response = await fetch(`${BASE_URL}/collections_delete.php?id=${id}&workspace_id=${workspaceId}`, {
-
+      const data = await apiRequest('collections_delete.php', {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        token,
+        params: { id, workspace_id: workspaceId },
       });
-      const data = await response.json();
-      if (data.success) {
-        await fetchCollections();
-      } else {
-        stableHandleError(new Error('API returned failure'), 'Failed to delete collection');
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to delete collection');
       }
+
+      await fetchCollections();
+      return true;
     } catch (err) {
-      console.error('Failed to delete collection:', err);
       setError(err);
-      stableHandleError(err, 'Failed to delete collection');
+      handleError(err, 'Failed to delete collection');
+      return false;
     }
-  }, [token, fetchCollections, stableHandleError, workspaceId]);
+  }, [token, workspaceId, fetchCollections, handleError]);
 
   const renameCollection = useCallback(async (id, name) => {
     try {
-      const response = await fetch(`${BASE_URL}/collections_update.php`, {
+      const data = await apiRequest('collections_update.php', {
         method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ id, name, workspace_id: workspaceId }),
+        token,
+        body: { id, name, workspace_id: workspaceId },
       });
-      const data = await response.json();
-      if (data.success) {
-        await fetchCollections();
-      } else {
-        stableHandleError(new Error('API returned failure'), 'Failed to rename collection');
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to rename collection');
       }
-      return data.success;
+
+      await fetchCollections();
+      return true;
     } catch (err) {
-      console.error('Failed to rename collection:', err);
       setError(err);
-      stableHandleError(err, 'Failed to rename collection');
+      handleError(err, 'Failed to rename collection');
       return false;
     }
-  }, [token, fetchCollections, stableHandleError, workspaceId]);
+  }, [token, workspaceId, fetchCollections, handleError]);
 
   useEffect(() => {
-    if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ')) {
-      console.log('useCollectionsApi → Valid token → fetching collections');
+    if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ') && workspaceId) {
       fetchCollections();
     } else {
-      console.log('useCollectionsApi → No valid token → skipping collections fetch');
+      setCollections([]);
     }
-  }, [fetchCollections, token]);
+  }, [fetchCollections, token, workspaceId]);
 
   return {
     collections,

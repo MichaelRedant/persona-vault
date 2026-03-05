@@ -1,66 +1,169 @@
-import { useState, useEffect } from 'react';
-import Input from './Input';
-import Button from './Button';
-import useDraft from '../hooks/useDraft';
-import { useEditor, EditorContent } from '@tiptap/react';
+import { useEffect, useMemo, useState } from 'react';
+import { EditorContent, useEditor } from '@tiptap/react';
 import StarterKit from '@tiptap/starter-kit';
+import Button from './Button';
 import EditorToolbar from './EditorToolbar';
+import Input from './Input';
+import useDraft from '../hooks/useDraft';
+import { htmlToPlainText } from '../utils/sanitizeHtml';
+import {
+  mergeUniqueTags,
+  suggestStructureBlocks,
+  suggestTagsFromContent,
+} from '../utils/workflowSuggestions';
 
-export default function PersonaForm({ onSave, initialData, collections = [] }) {
-  const initialFormState = {
-    name: '',
-    description: '',
-    tagsInput: '',
-    collectionIds: [],
-  };
+const DEFAULT_PERSONA_FORM_STATE = {
+  name: '',
+  description: '',
+  tagsInput: '',
+  collectionIds: [],
+};
 
-  const [draft, setDraft, clearDraft] = useDraft('vault_draft_persona', initialFormState);
+const normalizeCollectionIds = (ids = []) =>
+  [...new Set((Array.isArray(ids) ? ids : [])
+    .map((entry) => Number(entry))
+    .filter((entry) => Number.isFinite(entry) && entry > 0))]
+    .sort((a, b) => a - b);
+
+const buildComparableState = (state) => ({
+  name: String(state?.name || '').trim(),
+  description: String(state?.description || '').trim(),
+  tags: mergeUniqueTags(state?.tagsInput || '').join(','),
+  collectionIds: normalizeCollectionIds(state?.collectionIds).join(','),
+});
+
+export default function PersonaForm({
+  onSave,
+  initialData,
+  collections = [],
+  workspaceTagSuggestions = [],
+  onDirtyChange,
+}) {
+  const [draft, setDraft, clearDraft] = useDraft('vault_draft_persona', DEFAULT_PERSONA_FORM_STATE);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
   const editor = useEditor({
     extensions: [StarterKit],
     content: draft.description,
-    onUpdate: ({ editor }) => {
-      setDraft({ ...draft, description: editor.getHTML() });
+    onUpdate: ({ editor: activeEditor }) => {
+      setDraft((previous) => ({ ...previous, description: activeEditor.getHTML() }));
     },
     editorProps: {
       attributes: {
-        placeholder: 'Beschrijf deze persona hier...',
-        class: 'min-h-[300px] max-h-[500px] overflow-y-auto prose dark:prose-invert prose-sm px-3 py-2 focus:outline-none'
-      }
-    }
+        id: 'persona-description-editor',
+        'aria-label': 'Persona description',
+        placeholder: 'Describe this persona...',
+        class: 'min-h-[300px] max-h-[500px] overflow-y-auto prose dark:prose-invert prose-sm px-3 py-2 focus:outline-none',
+      },
+    },
   });
 
   useEffect(() => {
     if (initialData) {
-      setDraft({
+      const nextDraft = {
         name: initialData.name || '',
         description: initialData.description || '',
         tagsInput: Array.isArray(initialData.tags)
           ? initialData.tags.join(', ')
           : typeof initialData.tags === 'string'
-          ? initialData.tags
-          : '',
+            ? initialData.tags
+            : '',
         collectionIds: Array.isArray(initialData.collectionIds)
           ? initialData.collectionIds
           : [],
-      });
+      };
 
+      setDraft(nextDraft);
       if (editor) {
-        editor.commands.setContent(initialData.description || '');
+        editor.commands.setContent(nextDraft.description || '');
       }
-    } else {
-      setDraft(initialFormState);
+      return;
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+
+    setDraft(DEFAULT_PERSONA_FORM_STATE);
+    if (editor) {
+      editor.commands.setContent('');
+    }
   }, [initialData, setDraft, editor]);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const currentTags = useMemo(() => mergeUniqueTags(draft.tagsInput), [draft.tagsInput]);
+  const baselineComparable = useMemo(() => {
+    const baselineState = initialData ? {
+      name: initialData.name || '',
+      description: initialData.description || '',
+      tagsInput: Array.isArray(initialData.tags)
+        ? initialData.tags.join(', ')
+        : typeof initialData.tags === 'string'
+          ? initialData.tags
+          : '',
+      collectionIds: Array.isArray(initialData.collectionIds) ? initialData.collectionIds : [],
+    } : DEFAULT_PERSONA_FORM_STATE;
 
-    if (draft.name.trim() === '' || draft.description.trim() === '') {
-      setError('Name and Description are required.');
+    return buildComparableState(baselineState);
+  }, [initialData]);
+
+  const draftComparable = useMemo(() => buildComparableState(draft), [draft]);
+
+  const isDirty = useMemo(
+    () => JSON.stringify(draftComparable) !== JSON.stringify(baselineComparable),
+    [draftComparable, baselineComparable]
+  );
+
+  useEffect(() => {
+    onDirtyChange?.(isDirty);
+  }, [isDirty, onDirtyChange]);
+
+  const suggestedTags = useMemo(
+    () =>
+      suggestTagsFromContent({
+        title: draft.name,
+        body: htmlToPlainText(draft.description),
+        workspaceTags: workspaceTagSuggestions,
+        currentTags,
+        max: 6,
+      }),
+    [draft.name, draft.description, workspaceTagSuggestions, currentTags]
+  );
+
+  const structureSuggestions = useMemo(
+    () =>
+      suggestStructureBlocks({
+        type: 'persona',
+        title: draft.name,
+        body: htmlToPlainText(draft.description),
+      }),
+    [draft.name, draft.description]
+  );
+
+  const applyTagSuggestion = (tag) => {
+    setDraft((previous) => ({
+      ...previous,
+      tagsInput: mergeUniqueTags(previous.tagsInput, [tag]).join(', '),
+    }));
+  };
+
+  const insertStructureTemplate = (htmlTemplate) => {
+    if (!htmlTemplate) {
+      return;
+    }
+
+    const existingHtml = editor?.getHTML?.() || draft.description || '';
+    const hasContent = htmlToPlainText(existingHtml).trim().length > 0;
+    const nextHtml = hasContent ? `${existingHtml}<p></p>${htmlTemplate}` : htmlTemplate;
+
+    if (editor) {
+      editor.commands.setContent(nextHtml);
+    }
+    setDraft((previous) => ({ ...previous, description: nextHtml }));
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
+
+    const plainDescription = htmlToPlainText(draft.description).trim();
+    if (draft.name.trim() === '' || plainDescription === '') {
+      setError('Name and description are required.');
       return;
     }
 
@@ -72,30 +175,27 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
       name: draft.name,
       description: draft.description,
       favorite: initialData ? initialData.favorite : false,
-      tags: draft.tagsInput
-        .split(',')
-        .map(tag => tag.trim())
-        .filter((tag, i, arr) => tag && arr.indexOf(tag) === i), // unieke tags
-      collectionIds: draft.collectionIds,
+      tags: mergeUniqueTags(draft.tagsInput),
+      collectionIds: Array.isArray(draft.collectionIds) ? draft.collectionIds : [],
     };
 
     try {
       await onSave(personaData);
+      onDirtyChange?.(false);
       clearDraft();
-    } catch (err) {
-      console.error('Error saving persona:', err);
+    } catch {
       setError('An error occurred while saving. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const toggleCollection = (id) => {
-    setDraft((prev) => {
-      const updated = prev.collectionIds.includes(id)
-        ? prev.collectionIds.filter((cid) => cid !== id)
-        : [...prev.collectionIds, id];
-      return { ...prev, collectionIds: updated };
+  const toggleCollection = (collectionId) => {
+    setDraft((previous) => {
+      const updated = previous.collectionIds.includes(collectionId)
+        ? previous.collectionIds.filter((entry) => entry !== collectionId)
+        : [...previous.collectionIds, collectionId];
+      return { ...previous, collectionIds: updated };
     });
   };
 
@@ -107,12 +207,12 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
         <Input
           label="Persona Name"
           value={draft.name}
-          onChange={(e) => setDraft({ ...draft, name: e.target.value })}
+          onChange={(event) => setDraft((previous) => ({ ...previous, name: event.target.value }))}
           required
         />
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+          <label htmlFor="persona-description-editor" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
             Persona Description
           </label>
           <EditorToolbar editor={editor} />
@@ -121,18 +221,59 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
           </div>
         </div>
 
-        <Input
-          label="Tags (comma-separated)"
-          value={draft.tagsInput}
-          onChange={(e) => setDraft({ ...draft, tagsInput: e.target.value })}
-          placeholder="e.g. SEO, Content, Data"
-        />
+        <div className="space-y-2">
+          <Input
+            label="Tags (comma-separated)"
+            value={draft.tagsInput}
+            onChange={(event) => setDraft((previous) => ({ ...previous, tagsInput: event.target.value }))}
+            placeholder="e.g. SEO, Content, Data"
+          />
 
-        {/* 🧩 Collection Selector */}
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Smart tag suggestions
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {suggestedTags.length > 0 ? (
+                suggestedTags.map((tag) => (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => applyTagSuggestion(tag)}
+                    className="pv-chip hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                  >
+                    + {tag}
+                  </button>
+                ))
+              ) : (
+                <p className="text-xs pv-subtle">No suggestions yet. Add more context to generate recommendations.</p>
+              )}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              Suggested structure blocks
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {structureSuggestions.map((suggestion) => (
+                <button
+                  key={suggestion.id}
+                  type="button"
+                  onClick={() => insertStructureTemplate(suggestion.html)}
+                  className="px-2.5 py-1 text-xs rounded-full border border-[var(--pv-border)] bg-[var(--pv-surface-muted)] hover:bg-[var(--pv-surface)] focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
+                >
+                  Insert {suggestion.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
+          <p id="persona-collections-label" className="block text-sm font-medium text-gray-700 dark:text-gray-200 mb-1">
             Collections
-          </label>
+          </p>
 
           {collections.length === 0 ? (
             <p className="text-sm text-gray-500 dark:text-gray-400 italic">
@@ -141,25 +282,29 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
           ) : (
             <>
               <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
-                Geselecteerd: {draft.collectionIds.length}
+                Selected: {draft.collectionIds.length}
               </p>
 
-              <div className="border rounded-md p-2 max-h-60 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2">
-                {collections.map((c) => {
-                  const isSelected = draft.collectionIds.includes(Number(c.id));
+              <div
+                role="group"
+                aria-labelledby="persona-collections-label"
+                className="border rounded-md p-2 max-h-60 overflow-y-auto grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-2"
+              >
+                {collections.map((collection) => {
+                  const isSelected = draft.collectionIds.includes(Number(collection.id));
                   return (
                     <button
                       type="button"
-                      key={c.id}
-                      onClick={() => toggleCollection(Number(c.id))}
-                      title={c.name}
-                      className={`px-3 py-2 rounded-md border text-sm font-medium text-left truncate
-                        ${isSelected
+                      key={collection.id}
+                      onClick={() => toggleCollection(Number(collection.id))}
+                      title={collection.name}
+                      className={`px-3 py-2 rounded-md border text-sm font-medium text-left truncate ${
+                        isSelected
                           ? 'bg-blue-600 text-white border-blue-700'
-                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white border-gray-300 dark:border-gray-600'}
-                      `}
+                          : 'bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white border-gray-300 dark:border-gray-600'
+                      }`}
                     >
-                      {c.name}
+                      {collection.name}
                     </button>
                   );
                 })}
@@ -175,8 +320,8 @@ export default function PersonaForm({ onSave, initialData, collections = [] }) {
             ? 'Updating Persona...'
             : 'Saving Persona...'
           : initialData
-          ? 'Update Persona'
-          : 'Save Persona'}
+            ? 'Update Persona'
+            : 'Save Persona'}
       </Button>
     </form>
   );

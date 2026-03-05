@@ -1,15 +1,15 @@
-import Modal from './Modal';
-import PromptForm from './PromptForm';
-import PromptCard from './PromptCard';
+import { useEffect, useRef, useState } from 'react';
 import Button from './Button';
-import RevisionsModal from './RevisionsModal'; // 👈 nieuwe component
-import Tooltip from './Tooltip';
+import ConfirmDialog from './ConfirmDialog';
 import ListingManageModal from './ListingManageModal';
-
-
-import { useState, useEffect, useRef } from 'react';
-import { usePromptRevisionsApi } from '../hooks/usePromptRevisionsApi';
+import Modal from './Modal';
+import PromptCard from './PromptCard';
+import PromptForm from './PromptForm';
+import RevisionsModal from './RevisionsModal';
+import StatePanel from './StatePanel';
+import Tooltip from './Tooltip';
 import { useMarketplaceApi } from '../hooks/useMarketplaceApi';
+import { usePromptRevisionsApi } from '../hooks/usePromptRevisionsApi';
 
 export default function PromptDashboard({
   prompts,
@@ -24,27 +24,36 @@ export default function PromptDashboard({
   sortOption,
   onShowToast,
   token,
-  workspaceId
+  workspaceId,
+  canEditWorkspace = true,
+  workspaceTagSuggestions = [],
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingPrompt, setEditingPrompt] = useState(null);
   const [isEditing, setIsEditing] = useState(false);
+  const [hasUnsavedPromptChanges, setHasUnsavedPromptChanges] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
   const [visibleCount, setVisibleCount] = useState(20);
+  const [selectedPromptForRevisions, setSelectedPromptForRevisions] = useState(null);
+  const [uploadingPrompt, setUploadingPrompt] = useState(null);
   const loadMoreRef = useRef();
 
-  const [selectedPromptForRevisions, setSelectedPromptForRevisions] = useState(null);
-  const { revisions, loading: loadingRevisions, fetchRevisions } = usePromptRevisionsApi(token, workspaceId);
-
+  const { revisions, loading: loadingRevisions, fetchRevisions } = usePromptRevisionsApi(
+    token,
+    workspaceId,
+    onShowToast
+  );
   const { createListing, uploadFile } = useMarketplaceApi(token);
-  const [uploadingPrompt, setUploadingPrompt] = useState(null);
   const stripHtml = (html = '') => html.replace(/<[^>]*>/g, '');
 
   const filteredPrompts = prompts
     .filter((prompt) =>
       (!showFavoritesOnly || prompt.favorite) &&
-      (activeTags.length === 0 || (prompt.tags || []).some(tag => activeTags.includes(tag))) &&
-      (prompt.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        prompt.content.toLowerCase().includes(searchTerm.toLowerCase()))
+      (activeTags.length === 0 || (prompt.tags || []).some((tag) => activeTags.includes(tag))) &&
+      (
+        prompt.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        prompt.content.toLowerCase().includes(searchTerm.toLowerCase())
+      )
     )
     .sort((a, b) => {
       if (sortOption === 'newest') return b.id - a.id;
@@ -56,13 +65,13 @@ export default function PromptDashboard({
 
   const hasMore = visibleCount < filteredPrompts.length;
 
-  const handleLoadMore = () => setVisibleCount((prev) => prev + 20);
-
   useEffect(() => {
     const currentElement = loadMoreRef.current;
     const observer = new IntersectionObserver(
       (entries) => {
-        if (entries[0].isIntersecting) handleLoadMore();
+        if (entries[0].isIntersecting) {
+          setVisibleCount((prev) => prev + 20);
+        }
       },
       { threshold: 1 }
     );
@@ -73,37 +82,79 @@ export default function PromptDashboard({
     };
   }, [filteredPrompts.length, visibleCount]);
 
-  useEffect(() => setVisibleCount(20), [searchTerm, activeTags, showFavoritesOnly]);
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [searchTerm, activeTags, showFavoritesOnly]);
 
-  const handleSavePrompt = async (prompt) => {
-    if (editingPrompt) {
-      await updatePrompt(prompt.id, prompt.title, prompt.content, prompt.category, prompt.tags);
-      onShowToast('Prompt updated successfully!');
-    } else {
-      await createPrompt(prompt.title, prompt.content, prompt.category, prompt.tags);
-      onShowToast('Prompt created successfully!');
-    }
-    await fetchPrompts();
+  const closePromptModal = ({ discardDraft = false } = {}) => {
     setIsModalOpen(false);
     setEditingPrompt(null);
     setIsEditing(false);
-    localStorage.removeItem('vault_draft_prompt');
+    setHasUnsavedPromptChanges(false);
+    setShowDiscardConfirm(false);
+    if (discardDraft || isEditing) {
+      localStorage.removeItem('vault_draft_prompt');
+    }
+  };
+
+  const requestClosePromptModal = () => {
+    if (hasUnsavedPromptChanges) {
+      setShowDiscardConfirm(true);
+      return;
+    }
+
+    closePromptModal();
+  };
+
+  const handleSavePrompt = async (prompt) => {
+    if (!canEditWorkspace) {
+      return;
+    }
+
+    if (editingPrompt) {
+      const updated = await updatePrompt(prompt.id, prompt.title, prompt.content, prompt.category, prompt.tags);
+      if (!updated) return;
+      onShowToast('Prompt updated successfully!');
+    } else {
+      const created = await createPrompt(prompt.title, prompt.content, prompt.category, prompt.tags);
+      if (!created) return;
+      onShowToast('Prompt created successfully!');
+    }
+
+    await fetchPrompts();
+    closePromptModal({ discardDraft: true });
   };
 
   const startEdit = (prompt) => {
+    if (!canEditWorkspace) {
+      return;
+    }
+
     setEditingPrompt(prompt);
     setIsEditing(true);
+    setHasUnsavedPromptChanges(false);
     setIsModalOpen(true);
   };
 
   const startCreate = () => {
+    if (!canEditWorkspace) {
+      return;
+    }
+
     setEditingPrompt(null);
     setIsEditing(false);
+    setHasUnsavedPromptChanges(false);
     setIsModalOpen(true);
   };
 
   const toggleFavorite = async (id, currentFavorite) => {
-    await updatePromptFavorite(id, currentFavorite ? 0 : 1);
+    if (!canEditWorkspace) {
+      return;
+    }
+
+    const updated = await updatePromptFavorite(id, currentFavorite ? 0 : 1);
+    if (!updated) return;
+
     await fetchPrompts();
     onShowToast('Favorite updated!');
   };
@@ -115,22 +166,26 @@ export default function PromptDashboard({
 
   return (
     <div className="p-4 sm:p-6">
-      
-      <div className="flex justify-end mb-6">
-        <Tooltip text="Create a new prompt">
-          <Button variant="primary" onClick={startCreate}>
-            + Add Prompt
-          </Button>
-        </Tooltip>
-      </div>
+      {canEditWorkspace && (
+        <div className="flex justify-end mb-6">
+          <Tooltip text="Create a new prompt">
+            <Button variant="primary" onClick={startCreate}>
+              + Add Prompt
+            </Button>
+          </Tooltip>
+        </div>
+      )}
 
       {filteredPrompts.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <p className="text-lg mb-4">No prompts yet</p>
-          <Button variant="primary" onClick={startCreate}>
-            Create your first prompt
-          </Button>
-        </div>
+        <StatePanel
+          variant="empty"
+          title="No prompts found"
+          description={canEditWorkspace
+            ? 'Create your first prompt or adjust your filters.'
+            : 'Adjust your filters to explore available prompts.'}
+          actionLabel={canEditWorkspace ? 'Create Prompt' : ''}
+          onAction={canEditWorkspace ? startCreate : undefined}
+        />
       ) : (
         <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredPrompts.slice(0, visibleCount).map((prompt) => (
@@ -139,14 +194,21 @@ export default function PromptDashboard({
               prompt={prompt}
               onToggleFavorite={(id, currentFavorite) => toggleFavorite(id, currentFavorite)}
               onDelete={async () => {
-                await deletePrompt(prompt.id);
+                if (!canEditWorkspace) return;
+                const deleted = await deletePrompt(prompt.id);
+                if (!deleted) return;
+
                 await fetchPrompts();
                 onShowToast('Prompt deleted.');
               }}
               onEdit={startEdit}
               onViewRevisions={() => openRevisionsModal(prompt)}
               onShowToast={onShowToast}
-              onUpload={(prompt) => setUploadingPrompt(prompt)}
+              onUpload={(entry) => {
+                if (!canEditWorkspace) return;
+                setUploadingPrompt(entry);
+              }}
+              canEditWorkspace={canEditWorkspace}
             />
           ))}
         </div>
@@ -155,49 +217,57 @@ export default function PromptDashboard({
       {hasMore && (
         <div ref={loadMoreRef} className="h-16 flex justify-center items-center">
           <div className="relative w-6 h-6">
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin"></div>
-            <div className="absolute inset-0 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin" />
+            <div className="absolute inset-0 rounded-full border-2 border-gray-300 dark:border-gray-600" />
           </div>
-          <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">Loading more...</span>
+          <span className="ml-3 text-sm pv-subtle">Loading more...</span>
         </div>
       )}
 
-      {/* Modal voor bewerken of aanmaken */}
       <Modal
         isOpen={isModalOpen}
-        onClose={() => {
-          setIsModalOpen(false);
-          setEditingPrompt(null);
-          if (isEditing) localStorage.removeItem('vault_draft_prompt');
-          setIsEditing(false);
-        }}
+        onClose={requestClosePromptModal}
       >
         <PromptForm
           key={editingPrompt ? editingPrompt.id : 'new'}
           onSave={handleSavePrompt}
           initialData={editingPrompt}
+          workspaceTagSuggestions={workspaceTagSuggestions}
+          onDirtyChange={setHasUnsavedPromptChanges}
         />
       </Modal>
 
-      {/* Revisie Modal */}
+      <ConfirmDialog
+        isOpen={showDiscardConfirm}
+        onClose={() => setShowDiscardConfirm(false)}
+        onConfirm={() => closePromptModal({ discardDraft: true })}
+        title="Discard unsaved prompt changes?"
+        description="Your unsaved changes will be lost if you close this form."
+      />
+
       <RevisionsModal
         isOpen={!!selectedPromptForRevisions}
         onClose={() => setSelectedPromptForRevisions(null)}
         revisions={revisions}
         loading={loadingRevisions}
-        currentPrompt={selectedPromptForRevisions}
+        currentItem={selectedPromptForRevisions}
+        type="prompt"
         onRollback={async (revision) => {
-          await updatePrompt(
-  selectedPromptForRevisions.id,
-  revision.title,
-  revision.content,
-  revision.category,
-  revision.tags
-);
+          if (!canEditWorkspace) return;
+          const rolledBack = await updatePrompt(
+            selectedPromptForRevisions.id,
+            revision.title,
+            revision.content,
+            revision.category,
+            revision.tags
+          );
+          if (!rolledBack) return;
+
           await fetchPrompts();
           onShowToast('Prompt rolled back to revision.');
           setSelectedPromptForRevisions(null);
         }}
+        canRollback={canEditWorkspace}
       />
 
       <ListingManageModal
@@ -211,10 +281,15 @@ export default function PromptDashboard({
           tags: Array.isArray(uploadingPrompt.tags) ? uploadingPrompt.tags.join(',') : (uploadingPrompt.tags || ''),
         } : {}}
         uploadFn={uploadFile}
+        lockItemSelection
         onSave={async (payload) => {
-          await createListing({ ...payload, currency: 'EUR', visibility: 'public' });
-          setUploadingPrompt(null);
-          onShowToast('Uploaded to marketplace!');
+          try {
+            await createListing({ ...payload, currency: 'EUR', visibility: 'public' });
+            setUploadingPrompt(null);
+            onShowToast('Uploaded to marketplace!');
+          } catch (error) {
+            onShowToast(error?.message || 'Failed to upload to marketplace');
+          }
         }}
       />
     </div>

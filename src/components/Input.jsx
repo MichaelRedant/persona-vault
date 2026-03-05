@@ -1,4 +1,4 @@
-import { forwardRef } from 'react';
+import { forwardRef, useId } from 'react';
 
 const Input = forwardRef(function Input(
   {
@@ -13,10 +13,18 @@ const Input = forwardRef(function Input(
   },
   ref
 ) {
+  const generatedId = useId();
+  const inputId = props.id || generatedId;
+
   return (
     <div className="flex flex-col space-y-1">
-      {label && <label className="font-semibold text-sm">{label}</label>}
+      {label && (
+        <label htmlFor={inputId} className="font-semibold text-sm">
+          {label}
+        </label>
+      )}
       <input
+        id={inputId}
         ref={ref}
         type={type}
         value={value}

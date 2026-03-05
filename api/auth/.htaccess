@@ -1,0 +1,23 @@
+# Laat alleen onze origins toe en echo die terug in de header
+SetEnvIfNoCase Origin "^https://(www\.)?xinudesign\.be$" ORIGIN=$0
+SetEnvIfNoCase Origin "^http://localhost:5173$" ORIGIN=$0
+
+<IfModule mod_headers.c>
+  Header always set Access-Control-Allow-Origin "%{ORIGIN}e" env=ORIGIN
+  Header always set Vary "Origin"
+  Header always set Access-Control-Allow-Headers "Authorization, Content-Type"
+  Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+  Header always set Access-Control-Max-Age "86400"
+</IfModule>
+
+# Beantwoord preflight zonder PHP
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteCond %{REQUEST_METHOD} =OPTIONS
+  RewriteRule ^ - [R=204,L]
+</IfModule>
+
+# Zodat Authorization header PHP bereikt
+<IfModule mod_setenvif.c>
+  SetEnvIf Authorization "(.*)" HTTP_AUTHORIZATION=$1
+</IfModule>

@@ -3,6 +3,7 @@ header('Content-Type: application/json');
 include 'cors.php';
 include 'db.php';
 require 'auth_check.php'; // ✅ Haalt $user_id en $workspace_id op
+require_workspace_permission('editor');
 
 // ✅ Valideer ID
 $id = isset($_GET['id']) ? (int)$_GET['id'] : 0;
@@ -14,7 +15,7 @@ if ($id <= 0) {
 
 try {
     // ✅ Controleer of prompt bestaat en behoort tot gebruiker + workspace (admins mogen alles)
-    if ($is_admin) {
+    if ($can_manage_workspace) {
         $checkStmt = $pdo->prepare("SELECT id FROM prompts WHERE id = ? AND workspace_id = ?");
         $checkStmt->execute([$id, $workspace_id]);
     } else {

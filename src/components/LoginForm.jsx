@@ -39,7 +39,6 @@ export default function LoginForm({ onLoginSuccess }) {
         throw new Error(data.error || 'Login failed');
       }
     } catch (err) {
-      console.error('Login error:', err);
       setError(err.message);
     } finally {
       setLoading(false);

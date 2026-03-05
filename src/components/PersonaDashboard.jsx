@@ -1,12 +1,14 @@
-import Modal from './Modal';
-import PersonaForm from './PersonaForm';
-import PersonaCard from './PersonaCard';
+import { useEffect, useRef, useState } from 'react';
 import Button from './Button';
-import { useState, useEffect, useRef } from 'react';
-import { usePersonaRevisionsApi } from '../hooks/usePersonaRevisionsApi';
-import RevisionsModal from './RevisionsModal';
+import ConfirmDialog from './ConfirmDialog';
 import ListingManageModal from './ListingManageModal';
+import Modal from './Modal';
+import PersonaCard from './PersonaCard';
+import PersonaForm from './PersonaForm';
+import RevisionsModal from './RevisionsModal';
+import StatePanel from './StatePanel';
 import { useMarketplaceApi } from '../hooks/useMarketplaceApi';
+import { usePersonaRevisionsApi } from '../hooks/usePersonaRevisionsApi';
 
 export default function PersonaDashboard({
   personas,
@@ -23,30 +25,51 @@ export default function PersonaDashboard({
   collections,
   defaultCollectionId = null,
   token,
-  workspaceId
+  workspaceId,
+  canEditWorkspace = true,
+  workspaceTagSuggestions = [],
 }) {
- const [isModalOpen, setIsModalOpen] = useState(false);
-const [editingPersona, setEditingPersona] = useState(null);
-const [isEditing, setIsEditing] = useState(false);
-const [visibleCount, setVisibleCount] = useState(20);
-const [selectedPersonaForRevisions, setSelectedPersonaForRevisions] = useState(null);
-const loadMoreRef = useRef();
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editingPersona, setEditingPersona] = useState(null);
+  const [isEditing, setIsEditing] = useState(false);
+  const [hasUnsavedPersonaChanges, setHasUnsavedPersonaChanges] = useState(false);
+  const [showDiscardConfirm, setShowDiscardConfirm] = useState(false);
+  const [visibleCount, setVisibleCount] = useState(20);
+  const [selectedPersonaForRevisions, setSelectedPersonaForRevisions] = useState(null);
+  const [uploadingPersona, setUploadingPersona] = useState(null);
+  const loadMoreRef = useRef();
 
-const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevisionsApi(token, workspaceId);
+  const { revisions, loading: loadingRevisions, fetchRevisions } = usePersonaRevisionsApi(
+    token,
+    workspaceId,
+    onShowToast
+  );
+  const { createListing, uploadFile } = useMarketplaceApi(token);
+  const stripHtml = (html = '') => html.replace(/<[^>]*>/g, '');
+  const parseCollectionIds = (value) => {
+    if (Array.isArray(value)) {
+      return value.map(Number).filter((entry) => Number.isFinite(entry) && entry > 0);
+    }
 
-const { createListing, uploadFile } = useMarketplaceApi(token);
-const [uploadingPersona, setUploadingPersona] = useState(null);
-const stripHtml = (html = '') => html.replace(/<[^>]*>/g, '');
+    if (typeof value === 'string') {
+      return value
+        .split(',')
+        .map((entry) => Number.parseInt(entry.trim(), 10))
+        .filter((entry) => Number.isFinite(entry) && entry > 0);
+    }
+
+    return [];
+  };
 
   const openRevisionsModal = async (persona) => {
-  await fetchRevisions(persona.id);
-  setSelectedPersonaForRevisions(persona);
-};
+    await fetchRevisions(persona.id);
+    setSelectedPersonaForRevisions(persona);
+  };
 
   const filteredPersonas = personas
     .filter((item) =>
       (!showFavoritesOnly || item.favorite) &&
-      (activeTags.length === 0 || (item.tags || []).some(tag => activeTags.includes(tag))) &&
+      (activeTags.length === 0 || (item.tags || []).some((tag) => activeTags.includes(tag))) &&
       (
         item.title?.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.content?.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -64,26 +87,18 @@ const stripHtml = (html = '') => html.replace(/<[^>]*>/g, '');
 
   const hasMore = visibleCount < filteredPersonas.length;
 
-  const handleLoadMore = () => {
-    setVisibleCount((prev) => prev + 20);
-  };
-
-  
   useEffect(() => {
-  if (editingPersona?.id) {
-    fetchRevisions(editingPersona.id);
-  }
-}, [editingPersona?.id, fetchRevisions]);
-
-
+    if (editingPersona?.id) {
+      fetchRevisions(editingPersona.id);
+    }
+  }, [editingPersona?.id, fetchRevisions]);
 
   useEffect(() => {
     const currentElement = loadMoreRef.current;
-
     const observer = new IntersectionObserver(
       (entries) => {
         if (entries[0].isIntersecting) {
-          handleLoadMore();
+          setVisibleCount((prev) => prev + 20);
         }
       },
       { threshold: 1 }
@@ -104,86 +119,124 @@ const stripHtml = (html = '') => html.replace(/<[^>]*>/g, '');
     setVisibleCount(20);
   }, [searchTerm, activeTags, showFavoritesOnly]);
 
-  const handleSavePersona = async (persona) => {
-  const collectionId =
-    editingPersona && editingPersona.collectionId !== undefined
-      ? editingPersona.collectionId
-      : defaultCollectionId;
-
-  const collectionIds = persona.collectionIds || persona.collection_ids || [];
-
-  const personaToSave = {
-    ...persona,
-    collectionId,
-    collectionIds, // ✅ DIT toevoegen
+  const closePersonaModal = ({ discardDraft = false } = {}) => {
+    setIsModalOpen(false);
+    setEditingPersona(null);
+    setIsEditing(false);
+    setHasUnsavedPersonaChanges(false);
+    setShowDiscardConfirm(false);
+    if (discardDraft || isEditing) {
+      localStorage.removeItem('vault_draft_persona');
+    }
   };
 
-  if (editingPersona) {
-    await updatePersona(
-      personaToSave.id,
-      personaToSave.name,
-      personaToSave.description,
-      personaToSave.tags,
-      personaToSave.collectionIds // ✅ Gebruik collectionIds hier!
-    );
-    onShowToast('Persona updated successfully!');
-  } else {
-    await createPersona(
-  personaToSave.name,
-  personaToSave.description,
-  personaToSave.tags,
-  personaToSave.collectionIds // ✅ volledige array!
-);
-    onShowToast('Persona created successfully!');
-  }
+  const requestClosePersonaModal = () => {
+    if (hasUnsavedPersonaChanges) {
+      setShowDiscardConfirm(true);
+      return;
+    }
 
-  await fetchPersonas();
-  setIsModalOpen(false);
-  setEditingPersona(null);
-  setIsEditing(false);
-  localStorage.removeItem('vault_draft_persona');
-};
+    closePersonaModal();
+  };
+
+  const handleSavePersona = async (persona) => {
+    if (!canEditWorkspace) {
+      return;
+    }
+
+    const collectionId =
+      editingPersona && editingPersona.collectionId !== undefined
+        ? editingPersona.collectionId
+        : defaultCollectionId;
+
+    const collectionIds = persona.collectionIds || persona.collection_ids || [];
+    const personaToSave = {
+      ...persona,
+      collectionId,
+      collectionIds,
+    };
+
+    if (editingPersona) {
+      const updated = await updatePersona(
+        personaToSave.id,
+        personaToSave.name,
+        personaToSave.description,
+        personaToSave.tags,
+        personaToSave.collectionIds
+      );
+      if (!updated) return;
+      onShowToast('Persona updated successfully!');
+    } else {
+      const created = await createPersona(
+        personaToSave.name,
+        personaToSave.description,
+        personaToSave.tags,
+        personaToSave.collectionIds
+      );
+      if (!created) return;
+      onShowToast('Persona created successfully!');
+    }
+
+    await fetchPersonas();
+    closePersonaModal({ discardDraft: true });
+  };
 
   const startEdit = (persona) => {
-  const enrichedPersona = {
-    ...persona,
-    collectionIds:
-      Array.isArray(persona.collectionIds) ? persona.collectionIds :
-      Array.isArray(persona.collection_ids) ? persona.collection_ids :
-      (typeof persona.collection_id === 'number' ? [persona.collection_id] : [])
+    if (!canEditWorkspace) {
+      return;
+    }
+
+    const enrichedPersona = {
+      ...persona,
+      collectionIds:
+        Array.isArray(persona.collectionIds) ? persona.collectionIds :
+        Array.isArray(persona.collection_ids) ? persona.collection_ids :
+        (typeof persona.collection_id === 'number' ? [persona.collection_id] : []),
+    };
+
+    setEditingPersona(enrichedPersona);
+    setIsEditing(true);
+    setHasUnsavedPersonaChanges(false);
+    setIsModalOpen(true);
   };
 
-  console.log("✏️ EDITING enrichedPersona:", enrichedPersona); // ✅ check hier
-  setEditingPersona(enrichedPersona);
-  setIsEditing(true);
-  setIsModalOpen(true);
-};
-
-
-
   const startCreate = () => {
+    if (!canEditWorkspace) {
+      return;
+    }
+
     setEditingPersona(null);
-    setIsEditing(false); // ✅ we zitten in add mode → laat draft bestaan
+    setIsEditing(false);
+    setHasUnsavedPersonaChanges(false);
     setIsModalOpen(true);
   };
 
   const toggleFavorite = async (id, currentFavorite) => {
-    await updatePersonaFavorite(id, currentFavorite ? 0 : 1);
+    if (!canEditWorkspace) {
+      return;
+    }
+
+    const updated = await updatePersonaFavorite(id, currentFavorite ? 0 : 1);
+    if (!updated) return;
+
     await fetchPersonas();
     onShowToast('Favorite updated!');
   };
 
   return (
     <div className="p-4 sm:p-6">
-      <div className="flex justify-end mb-6">
-        <Button onClick={startCreate}>+ Add Persona</Button>
-      </div>
+      {canEditWorkspace && (
+        <div className="flex justify-end mb-6">
+          <Button onClick={startCreate}>+ Add Persona</Button>
+        </div>
+      )}
 
       {filteredPersonas.length === 0 ? (
-        <div className="text-center py-8 text-gray-500 dark:text-gray-400">
-          <p className="text-lg mb-2">No personas found.</p>
-          <p className="text-sm">Try adjusting your search or filters.</p>
-        </div>
+        <StatePanel
+          variant="empty"
+          title="No personas found"
+          description="Try adjusting your search or filters."
+        />
       ) : (
         <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {filteredPersonas.slice(0, visibleCount).map((persona) => (
@@ -193,14 +246,21 @@ const stripHtml = (html = '') => html.replace(/<[^>]*>/g, '');
               collections={collections}
               onToggleFavorite={toggleFavorite}
               onDelete={async () => {
-                await deletePersona(persona.id);
+                if (!canEditWorkspace) return;
+                const deleted = await deletePersona(persona.id);
+                if (!deleted) return;
+
                 await fetchPersonas();
                 onShowToast('Persona deleted.');
               }}
               onEdit={startEdit}
               onShowToast={onShowToast}
               onViewRevisions={() => openRevisionsModal(persona)}
-              onUpload={(p) => setUploadingPersona(p)}
+              onUpload={(p) => {
+                if (!canEditWorkspace) return;
+                setUploadingPersona(p);
+              }}
+              canEditWorkspace={canEditWorkspace}
             />
           ))}
         </div>
@@ -209,62 +269,66 @@ const stripHtml = (html = '') => html.replace(/<[^>]*>/g, '');
       {hasMore && (
         <div ref={loadMoreRef} className="h-16 flex justify-center items-center">
           <div className="relative w-6 h-6">
-            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin"></div>
-            <div className="absolute inset-0 rounded-full border-2 border-gray-300 dark:border-gray-600"></div>
+            <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-400 animate-spin" />
+            <div className="absolute inset-0 rounded-full border-2 border-gray-300 dark:border-gray-600" />
           </div>
-          <span className="ml-3 text-sm text-gray-500 dark:text-gray-400">Loading more...</span>
+          <span className="ml-3 text-sm pv-subtle">Loading more...</span>
         </div>
       )}
 
-      {/* Modal met key om form te resetten */}
-      <Modal isOpen={isModalOpen} onClose={() => {
-        setIsModalOpen(false);
-        setEditingPersona(null);
-
-        // 🧹 Alleen clear draft als we in edit mode waren
-        if (isEditing) {
-          localStorage.removeItem('vault_draft_persona');
-        }
-
-        setIsEditing(false);
-      }}>
+      <Modal
+        isOpen={isModalOpen}
+        onClose={requestClosePersonaModal}
+      >
         <PersonaForm
-  key={editingPersona ? editingPersona.id : 'new'}
-  onSave={handleSavePersona}
-  initialData={
-  editingPersona
-    ? {
-        ...editingPersona,
-        collectionIds: editingPersona.collectionIds || [],
-      }
-    : {
-        collectionId: defaultCollectionId,
-        collectionIds: defaultCollectionId ? [defaultCollectionId] : []
-      }
-}
-  collections={collections}
-/>
+          key={editingPersona ? editingPersona.id : 'new'}
+          onSave={handleSavePersona}
+          initialData={
+            editingPersona
+              ? { ...editingPersona, collectionIds: editingPersona.collectionIds || [] }
+              : {
+                  collectionId: defaultCollectionId,
+                  collectionIds: defaultCollectionId ? [defaultCollectionId] : [],
+                }
+          }
+          collections={collections}
+          workspaceTagSuggestions={workspaceTagSuggestions}
+          onDirtyChange={setHasUnsavedPersonaChanges}
+        />
       </Modal>
 
-  <RevisionsModal
-  isOpen={!!selectedPersonaForRevisions}
-  onClose={() => setSelectedPersonaForRevisions(null)}
-  revisions={revisions}
-  loading={loadingRevisions}
-  currentPrompt={selectedPersonaForRevisions}
-  onRollback={async (revision) => {
-    await updatePersona(
-      selectedPersonaForRevisions.id,
-      revision.name,
-      revision.description,
-      revision.tags,
-      revision.collection_ids
-    );
-    await fetchPersonas();
-    onShowToast('Persona rolled back to revision.');
-    setSelectedPersonaForRevisions(null);
-  }}
-/>
+      <ConfirmDialog
+        isOpen={showDiscardConfirm}
+        onClose={() => setShowDiscardConfirm(false)}
+        onConfirm={() => closePersonaModal({ discardDraft: true })}
+        title="Discard unsaved persona changes?"
+        description="Your unsaved changes will be lost if you close this form."
+      />
+
+      <RevisionsModal
+        isOpen={!!selectedPersonaForRevisions}
+        onClose={() => setSelectedPersonaForRevisions(null)}
+        revisions={revisions}
+        loading={loadingRevisions}
+        currentItem={selectedPersonaForRevisions}
+        type="persona"
+        onRollback={async (revision) => {
+          if (!canEditWorkspace) return;
+          const rolledBack = await updatePersona(
+            selectedPersonaForRevisions.id,
+            revision.name,
+            revision.description,
+            revision.tags,
+            parseCollectionIds(revision.collection_ids)
+          );
+          if (!rolledBack) return;
+
+          await fetchPersonas();
+          onShowToast('Persona rolled back to revision.');
+          setSelectedPersonaForRevisions(null);
+        }}
+        canRollback={canEditWorkspace}
+      />
 
       <ListingManageModal
         open={!!uploadingPersona}
@@ -277,13 +341,17 @@ const stripHtml = (html = '') => html.replace(/<[^>]*>/g, '');
           tags: Array.isArray(uploadingPersona.tags) ? uploadingPersona.tags.join(',') : (uploadingPersona.tags || ''),
         } : {}}
         uploadFn={uploadFile}
+        lockItemSelection
         onSave={async (payload) => {
-          await createListing({ ...payload, currency: 'EUR', visibility: 'public' });
-          setUploadingPersona(null);
-          onShowToast('Uploaded to marketplace!');
+          try {
+            await createListing({ ...payload, currency: 'EUR', visibility: 'public' });
+            setUploadingPersona(null);
+            onShowToast('Uploaded to marketplace!');
+          } catch (error) {
+            onShowToast(error?.message || 'Failed to upload to marketplace');
+          }
         }}
       />
-
     </div>
   );
 }

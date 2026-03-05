@@ -16,8 +16,7 @@ export default function Profile({ onCreatePrompt }) {
       try {
         const decoded = jwtDecode(token);
         setDecodedToken(decoded);
-      } catch (err) {
-        console.error('Invalid token:', err);
+      } catch {
         navigate('/');
       }
     } else {

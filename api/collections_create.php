@@ -3,6 +3,7 @@ header('Content-Type: application/json');
 include 'cors.php';
 require 'auth_check.php'; // ✅ Haalt $user_id en $workspace_id op
 include 'db.php';
+require_workspace_permission('editor');
 
 // ✅ Input ophalen
 $data = json_decode(file_get_contents('php://input'), true);

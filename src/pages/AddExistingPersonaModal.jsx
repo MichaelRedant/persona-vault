@@ -52,10 +52,12 @@ export default function AddExistingPersonaModal({
       >
         {/* Close button */}
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Close add existing personas modal"
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
         >
-          <FiX className="text-xl" />
+          <FiX className="text-xl" aria-hidden="true" />
         </button>
 
         {/* Modal title */}
@@ -71,7 +73,7 @@ export default function AddExistingPersonaModal({
         ) : (
           <div className="max-h-[300px] overflow-y-auto border border-gray-200 dark:border-gray-600 rounded p-2 space-y-2">
             {availablePersonas.map((persona) => (
-              <div
+              <label
                 key={persona.id}
                 className="flex items-center space-x-2 text-sm text-gray-700 dark:text-gray-200"
               >
@@ -79,17 +81,18 @@ export default function AddExistingPersonaModal({
                   type="checkbox"
                   checked={selectedPersonaIds.includes(persona.id)}
                   onChange={() => handleCheckboxChange(persona.id)}
+                  aria-label={`Select persona ${persona.name}`}
                   className="form-checkbox h-4 w-4 text-blue-600"
                 />
                 <span>{persona.name}</span>
-              </div>
+              </label>
             ))}
           </div>
         )}
 
         {/* Action buttons */}
         <div className="flex justify-end space-x-2 pt-4 border-t border-gray-200 dark:border-gray-700 mt-4">
-          <Button variant="outline" onClick={onClose}>
+          <Button type="button" variant="outline" onClick={onClose}>
             Cancel
           </Button>
           <Button

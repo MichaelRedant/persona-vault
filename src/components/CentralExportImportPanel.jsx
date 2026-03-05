@@ -1,7 +1,7 @@
 // src/components/CentralExportImportPanel.jsx
 import { useState } from 'react';
 
-export default function CentralExportImportPanel({ personas, setPersonas, prompts, setPrompts }) {
+export default function CentralExportImportPanel({ personas, setPersonas, prompts, setPrompts, onShowToast }) {
   const [exportDropdownOpen, setExportDropdownOpen] = useState(false);
   const [importDropdownOpen, setImportDropdownOpen] = useState(false);
 
@@ -47,13 +47,12 @@ export default function CentralExportImportPanel({ personas, setPersonas, prompt
         if (importedData.personas && importedData.prompts) {
           setPersonas(importedData.personas);
           setPrompts(importedData.prompts);
-          alert('Vault import successful!');
+          onShowToast?.('Vault import successful!');
         } else {
-          alert('Invalid Vault file: expected { personas, prompts } structure.');
+          onShowToast?.('Invalid Vault file: expected { personas, prompts } structure.');
         }
-      } catch (error) {
-        console.error('Error importing Vault:', error);
-        alert('Error reading file.');
+      } catch {
+        onShowToast?.('Error reading file.');
       }
     };
 

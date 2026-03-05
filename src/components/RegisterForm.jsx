@@ -43,8 +43,7 @@ export default function RegisterForm({ onRegisterSuccess }) {
       } else {
         setError(data.error || 'Registration failed.');
       }
-    } catch (err) {
-      console.error('Registration error:', err);
+    } catch {
       setError('An error occurred. Please try again.');
     } finally {
       setLoading(false);

@@ -3,6 +3,7 @@ header('Content-Type: application/json');
 include 'cors.php';
 include 'db.php';
 require 'auth_check.php'; // ✅ haalt $user_id en $workspace_id op via JWT
+require_workspace_permission('editor');
 
 $data = json_decode(file_get_contents('php://input'), true);
 $persona_id = $data['persona_id'] ?? null;
@@ -18,8 +19,13 @@ try {
     $pdo->beginTransaction();
 
     // ✅ Check ownership én workspace
-    $check = $pdo->prepare("SELECT id FROM personas WHERE id = ? AND user_id = ? AND workspace_id = ?");
-    $check->execute([$persona_id, $user_id, $workspace_id]);
+    if ($can_manage_workspace) {
+        $check = $pdo->prepare("SELECT id FROM personas WHERE id = ? AND workspace_id = ?");
+        $check->execute([$persona_id, $workspace_id]);
+    } else {
+        $check = $pdo->prepare("SELECT id FROM personas WHERE id = ? AND user_id = ? AND workspace_id = ?");
+        $check->execute([$persona_id, $user_id, $workspace_id]);
+    }
 
     if ($check->rowCount() === 0) {
         http_response_code(403);

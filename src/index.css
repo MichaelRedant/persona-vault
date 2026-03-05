@@ -1,17 +1,55 @@
-/* ============================================================
- * Tailwind CSS base + components + utilities
- * ============================================================
-*/
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* ============================================================
- * Base styles → Body background
- * ============================================================
-*/
-body {
-  background-color: #f3f4f6; /* light mode → gray-100 */
+:root {
+  --pv-font-sans: 'Manrope', 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+
+  --pv-bg-start: #f8fbff;
+  --pv-bg-mid: #eef5ff;
+  --pv-bg-end: #eefbf5;
+
+  --pv-surface: #ffffff;
+  --pv-surface-muted: rgba(255, 255, 255, 0.75);
+  --pv-surface-elevated: #ffffff;
+  --pv-border: #dbe6f2;
+
+  --pv-text: #142238;
+  --pv-text-muted: #4f5f78;
+  --pv-accent: #2563eb;
+  --pv-accent-strong: #1d4ed8;
+
+  --pv-space-2: 0.5rem;
+  --pv-space-3: 0.75rem;
+  --pv-space-4: 1rem;
+  --pv-space-6: 1.5rem;
+
+  --pv-radius-sm: 0.5rem;
+  --pv-radius-md: 0.75rem;
+  --pv-radius-lg: 1rem;
+  --pv-radius-xl: 1.25rem;
+
+  --pv-shadow-sm: 0 6px 18px rgba(20, 34, 56, 0.08);
+  --pv-shadow-md: 0 12px 28px rgba(20, 34, 56, 0.1);
+}
+
+.dark {
+  --pv-bg-start: #0b1220;
+  --pv-bg-mid: #111a2d;
+  --pv-bg-end: #0f1f2b;
+
+  --pv-surface: #141d31;
+  --pv-surface-muted: rgba(20, 29, 49, 0.8);
+  --pv-surface-elevated: #1a2640;
+  --pv-border: #243655;
+
+  --pv-text: #ebf1ff;
+  --pv-text-muted: #a8b4ca;
+  --pv-accent: #3b82f6;
+  --pv-accent-strong: #2563eb;
+
+  --pv-shadow-sm: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --pv-shadow-md: 0 14px 34px rgba(0, 0, 0, 0.34);
 }
 
 html,
@@ -20,20 +58,99 @@ body {
   overflow-x: hidden;
 }
 
+body {
+  font-family: var(--pv-font-sans);
+  color: var(--pv-text);
+  background-color: var(--pv-bg-start);
+}
+
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #111827;
+    background-color: var(--pv-bg-start);
   }
 }
 
 .dark body {
-  background-color: #111827;
+  background-color: var(--pv-bg-start);
 }
 
-/* ============================================================
- * TipTap Editor → .tiptap-editor styles
- * ============================================================
-*/
+@layer components {
+  .pv-page-shell {
+    background-image: linear-gradient(145deg, var(--pv-bg-start) 0%, var(--pv-bg-mid) 55%, var(--pv-bg-end) 100%);
+    color: var(--pv-text);
+  }
+
+  .pv-panel {
+    border: 1px solid var(--pv-border);
+    background: var(--pv-surface-muted);
+    border-radius: var(--pv-radius-xl);
+    box-shadow: var(--pv-shadow-sm);
+    backdrop-filter: blur(8px);
+  }
+
+  .pv-card {
+    border: 1px solid var(--pv-border);
+    background: linear-gradient(160deg, var(--pv-surface-elevated) 0%, var(--pv-surface) 100%);
+    border-radius: var(--pv-radius-xl);
+    box-shadow: var(--pv-shadow-sm);
+    transition: transform 180ms ease, box-shadow 180ms ease, border-color 180ms ease;
+  }
+
+  .pv-card:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--pv-shadow-md);
+    border-color: color-mix(in srgb, var(--pv-accent) 25%, var(--pv-border));
+  }
+
+  .pv-input {
+    width: 100%;
+    border: 1px solid var(--pv-border);
+    border-radius: var(--pv-radius-md);
+    background: var(--pv-surface);
+    color: var(--pv-text);
+    padding: 0.625rem 0.875rem;
+    transition: border-color 160ms ease, box-shadow 160ms ease;
+  }
+
+  .pv-input::placeholder {
+    color: var(--pv-text-muted);
+    opacity: 0.9;
+  }
+
+  .pv-input:focus {
+    outline: none;
+    border-color: var(--pv-accent);
+    box-shadow: 0 0 0 3px color-mix(in srgb, var(--pv-accent) 24%, transparent);
+  }
+
+  .pv-input-pill {
+    border-radius: 9999px;
+  }
+
+  .pv-chip {
+    display: inline-flex;
+    align-items: center;
+    border-radius: 9999px;
+    border: 1px solid color-mix(in srgb, var(--pv-accent) 22%, var(--pv-border));
+    background: color-mix(in srgb, var(--pv-accent) 10%, transparent);
+    color: var(--pv-text);
+    font-size: 0.75rem;
+    line-height: 1rem;
+    font-weight: 600;
+    padding: 0.2rem 0.65rem;
+  }
+
+  .pv-heading {
+    color: var(--pv-text);
+    font-weight: 700;
+    letter-spacing: -0.01em;
+  }
+
+  .pv-subtle {
+    color: var(--pv-text-muted);
+  }
+}
+
 .tiptap-editor {
   min-height: 150px;
   width: 100%;
@@ -50,14 +167,14 @@ body {
 
 .tiptap-editor h1 {
   font-size: 1.5rem;
-  font-weight: bold;
+  font-weight: 700;
   margin-top: 1rem;
   margin-bottom: 0.5rem;
 }
 
 .tiptap-editor h2 {
   font-size: 1.25rem;
-  font-weight: bold;
+  font-weight: 700;
   margin-top: 1rem;
   margin-bottom: 0.5rem;
 }
@@ -98,10 +215,6 @@ body {
   overflow-x: auto;
 }
 
-/* ============================================================
- * TipTap Editor → .ProseMirror styles
- * ============================================================
-*/
 .ProseMirror {
   min-height: 300px;
   max-height: 500px;
@@ -129,26 +242,16 @@ body {
   left: 1rem;
 }
 
-/* ============================================================
- * Rollback and Revision History → ins and del styles
- * ============================================================
-*/
-
 ins {
-  background-color: #bbf7d0; /* lichtgroen */
+  background-color: #bbf7d0;
   text-decoration: none;
 }
 
 del {
-  background-color: #fecaca; /* lichtrood */
+  background-color: #fecaca;
   text-decoration: line-through;
 }
 
-
-/* ============================================================
- * Scrollbar Styling → Modern clean scrollbar
- * ============================================================
-*/
 ::-webkit-scrollbar {
   width: 8px;
   height: 8px;
@@ -163,14 +266,17 @@ del {
   background: transparent;
 }
 
-/* ============================================================
- * Animations → FadeIn, FadeInOut, FadeIn (duplicate cleaned)
- * ============================================================
-*/
 @layer utilities {
   @keyframes fadeIn {
-    from { opacity: 0; transform: translateY(5px); }
-    to   { opacity: 1; transform: translateY(0); }
+    from {
+      opacity: 0;
+      transform: translateY(5px);
+    }
+
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   .animate-fadeIn {
@@ -179,30 +285,29 @@ del {
 }
 
 @keyframes fade-in-out {
-  0% { opacity: 0; transform: translateY(-10px); }
-  10% { opacity: 1; transform: translateY(0); }
-  90% { opacity: 1; transform: translateY(0); }
-  100% { opacity: 0; transform: translateY(-10px); }
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+
+  10% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  90% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  100% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
 }
 
 .animate-fade-in-out {
   animation: fade-in-out 3s ease forwards;
-}
-
-/* You had duplicate @keyframes fadeIn — I left this one */
-@keyframes fadeIn {
-  0% {
-    opacity: 0;
-    transform: scale(0.95);
-  }
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-}
-
-.animate-fadeIn {
-  animation: fadeIn 0.2s ease-out forwards;
 }
 
 @keyframes slideInRight {
@@ -210,9 +315,9 @@ del {
     opacity: 0;
     transform: translateX(30px);
   }
+
   100% {
     opacity: 1;
     transform: translateX(0);
   }
 }
-

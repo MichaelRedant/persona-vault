@@ -1,62 +1,94 @@
-import { useState } from 'react';
-import { downloadAsJson } from '../utils/downloadAsJson';
-import TryInPlatformButtons from './TryInPlatformButtons';
-import Button from './Button';
-import ConfirmDialog from './ConfirmDialog';
-import CardActionsDropdown from './CardActionsDropdown';
+import { useMemo, useState } from 'react';
 import { AiFillStar, AiOutlineStar } from 'react-icons/ai';
-import { FiEdit2, FiTrash2, FiClock, FiDownload, FiCopy, FiUploadCloud } from 'react-icons/fi';
+import { FiClock, FiCopy, FiDownload, FiEdit2, FiTrash2, FiUploadCloud } from 'react-icons/fi';
+import { downloadAsJson } from '../utils/downloadAsJson';
+import { htmlToPlainText, sanitizeRichHtml } from '../utils/sanitizeHtml';
+import Button from './Button';
+import CardActionsDropdown from './CardActionsDropdown';
+import ConfirmDialog from './ConfirmDialog';
+import TryInPlatformButtons from './TryInPlatformButtons';
 
-export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDelete, onEdit, onShowToast, onViewRevisions, onUpload = () => {} }) {
+export default function PromptCard({
+  prompt,
+  compactMode,
+  onToggleFavorite,
+  onDelete,
+  onEdit,
+  onShowToast,
+  onViewRevisions,
+  onUpload = () => {},
+  canEditWorkspace = true,
+}) {
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const handleCopy = (htmlContent) => {
-  // ✅ create temp DOM element to strip tags
-  const tempElement = document.createElement('div');
-  tempElement.innerHTML = htmlContent;
-  const plainText = tempElement.innerText;
+    const plainText = htmlToPlainText(htmlContent);
 
-  navigator.clipboard.writeText(plainText)
-    .then(() => {
-      onShowToast('Copied full content to clipboard!');
-    })
-    .catch((err) => {
-      console.error('Failed to copy!', err);
-      onShowToast('Failed to copy content.');
-    });
-};
+    navigator.clipboard.writeText(plainText)
+      .then(() => {
+        onShowToast('Copied full content to clipboard!');
+      })
+      .catch(() => {
+        onShowToast('Failed to copy content.');
+      });
+  };
 
   const tagsArray = Array.isArray(prompt.tags)
     ? prompt.tags
     : typeof prompt.tags === 'string'
-      ? prompt.tags.split(',').map(t => t.trim()).filter(Boolean)
+      ? prompt.tags.split(',').map((tag) => tag.trim()).filter(Boolean)
       : [];
 
+  const safeContent = useMemo(
+    () => sanitizeRichHtml(prompt.content || ''),
+    [prompt.content]
+  );
+
+  const cardActions = [
+    ...(canEditWorkspace
+      ? [
+          {
+            label: 'Edit',
+            icon: <FiEdit2 className="w-5 h-5" />,
+            onClick: () => onEdit(prompt),
+          },
+          {
+            label: 'Delete',
+            icon: <FiTrash2 className="w-5 h-5" />,
+            danger: true,
+            onClick: () => setConfirmOpen(true),
+          },
+        ]
+      : []),
+    {
+      label: 'Download',
+      icon: <FiDownload className="w-5 h-5" />,
+      onClick: () => downloadAsJson(prompt, prompt.title || 'prompt'),
+    },
+    {
+      label: 'Revisions',
+      icon: <FiClock />,
+      onClick: () => onViewRevisions(prompt),
+    },
+  ];
+
   return (
-    <div className={`card-container relative bg-gradient-to-tr from-gray-50 to-white dark:from-gray-800 dark:to-gray-900 rounded-2xl shadow-lg border border-gray-100 dark:border-gray-700 ${compactMode ? 'p-2 mb-3' : 'p-6 mb-6'} transition-transform transform hover:scale-[1.02] hover:shadow-xl duration-200 ease-in-out animate-fadeIn`}>
-
-      <div className="flex justify-between items-start flex-wrap sm:flex-nowrap">
-        {/* Content */}
+    <div className={`card-container relative pv-card ${compactMode ? 'p-2 mb-3' : 'p-6 mb-6'} animate-fadeIn`}>
+      <div className="flex justify-between items-start flex-wrap sm:flex-nowrap gap-4">
         <div>
-          <h2 className={`font-bold text-gray-900 dark:text-white mb-1 ${compactMode ? 'text-lg' : 'text-xl'}`}>
-  {prompt.title}
-</h2>
+          <h2 className={`font-bold mb-1 pv-heading ${compactMode ? 'text-lg' : 'text-xl'}`}>
+            {prompt.title}
+          </h2>
 
-<div
-  className={`max-h-[150px] overflow-y-auto mb-2 pr-1 ${compactMode ? 'text-xs' : 'text-sm'} text-gray-700 dark:text-gray-300 prose prose-sm dark:prose-invert max-w-none`}
-  dangerouslySetInnerHTML={{ __html: prompt.content }}
-/>
+          <div
+            className={`max-h-[150px] overflow-y-auto mb-2 pr-1 ${compactMode ? 'text-xs' : 'text-sm'} pv-subtle prose prose-sm dark:prose-invert max-w-none`}
+            dangerouslySetInnerHTML={{ __html: safeContent }}
+          />
 
-
-
-
-          {!compactMode && (
+          {!compactMode && tagsArray.length > 0 && (
             <div className="flex flex-wrap gap-2">
-              {tagsArray.map(tag => (
-                <span
-                  key={tag}
-                  className="font-medium rounded-full px-2.5 py-0.5 text-xs bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300"
-                >
+              {tagsArray.map((tag) => (
+                <span key={tag} className="pv-chip">
                   {tag}
                 </span>
               ))}
@@ -64,79 +96,60 @@ export default function PromptCard({ prompt, compactMode, onToggleFavorite, onDe
           )}
         </div>
 
-        {/* Actions */}
         <div className="flex flex-wrap gap-2 justify-end sm:justify-start mt-4 sm:mt-0 items-center">
-          <Button
-            onClick={() => onToggleFavorite(prompt.id, prompt.favorite)}
-            variant="success"
-            icon={prompt.favorite ? <AiFillStar /> : <AiOutlineStar />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Favorite"
-          />
+          {canEditWorkspace && (
+            <Button
+              onClick={() => onToggleFavorite(prompt.id, prompt.favorite)}
+              variant="success"
+              icon={prompt.favorite ? <AiFillStar /> : <AiOutlineStar />}
+              className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+              aria-label={prompt.favorite ? `Remove ${prompt.title} from favorites` : `Add ${prompt.title} to favorites`}
+              title="Favorite"
+            />
+          )}
 
           <Button
-
-            onClick={() => handleCopy(prompt.content)}
+            onClick={() => handleCopy(safeContent)}
             variant="secondary"
             icon={<FiCopy className="w-5 h-5" />}
             className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+            aria-label={`Copy content for ${prompt.title}`}
             title="Copy"
           />
 
-          <Button
-
-            onClick={() => onUpload(prompt)}
-            variant="primary"
-            icon={<FiUploadCloud className="w-5 h-5" />}
-            className="w-10 h-10 text-xl p-0 flex items-center justify-center"
-            title="Upload to marketplace"
-          />
+          {canEditWorkspace && (
+            <Button
+              onClick={() => onUpload(prompt)}
+              variant="primary"
+              icon={<FiUploadCloud className="w-5 h-5" />}
+              className="w-10 h-10 text-xl p-0 flex items-center justify-center"
+              aria-label={`Upload ${prompt.title} to marketplace`}
+              title="Upload to marketplace"
+            />
+          )}
 
           <CardActionsDropdown
-            actions={[
-              {
-
-                label: 'Edit',
-                icon: <FiEdit2 className="w-5 h-5" />,
-                onClick: () => onEdit(prompt),
-              },
-              {
-                label: 'Delete',
-                icon: <FiTrash2 className="w-5 h-5" />,
-                danger: true,
-                onClick: () => setConfirmOpen(true),
-              },
-              {
-                label: 'Download',
-                icon: <FiDownload className="w-5 h-5" />,
-                onClick: () => downloadAsJson(prompt, prompt.title || 'prompt'),
-              },
-              {
-                label: 'Revisions',
-                icon: <FiClock />,
-                onClick: () => onViewRevisions(prompt),
-              },
-            ]}
+            actions={cardActions}
           />
         </div>
       </div>
 
-      {/* TryInPlatformButtons → in CompactMode weghalen */}
       {!compactMode && (
-        <TryInPlatformButtons promptText={prompt.content} onShowToast={onShowToast} />
+        <TryInPlatformButtons onShowToast={onShowToast} />
       )}
 
-      {/* ConfirmDialog */}
-      <ConfirmDialog
-        isOpen={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        onConfirm={() => {
-          onDelete(prompt.id);
-          setConfirmOpen(false);
-        }}
-        title={`Delete "${prompt.title}"?`}
-        description="Are you sure you want to delete this prompt? This action cannot be undone."
-      />
+      {canEditWorkspace && (
+        <ConfirmDialog
+          isOpen={confirmOpen}
+          onClose={() => setConfirmOpen(false)}
+          onConfirm={() => {
+            onDelete(prompt.id);
+            setConfirmOpen(false);
+          }}
+          title={`Delete "${prompt.title}"?`}
+          description="Are you sure you want to delete this prompt? This action cannot be undone."
+        />
+      )}
     </div>
   );
 }

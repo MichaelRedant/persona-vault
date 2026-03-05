@@ -3,6 +3,7 @@ header('Content-Type: application/json');
 require 'cors.php';
 require 'auth_check.php'; // ✅ haalt $user_id en $workspace_id op
 require 'db.php';
+require_workspace_permission('editor');
 
 $id = isset($_GET['id']) ? (int) $_GET['id'] : 0;
 
@@ -14,7 +15,7 @@ if ($id <= 0) {
 
 try {
     // ✅ Controleer of persona bestaat en of user eigenaar is (admins mogen alles)
-    if ($is_admin) {
+    if ($can_manage_workspace) {
         $check = $pdo->prepare("SELECT id FROM personas WHERE id = ? AND workspace_id = ?");
         $check->execute([$id, $workspace_id]);
     } else {

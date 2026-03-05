@@ -11,7 +11,6 @@ import {
 } from 'react-icons/fi';
 
 export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen }) {
-
   const navItems = [
     { id: 'personas', icon: FiUsers, label: 'Personas' },
     { id: 'prompts', icon: FiFileText, label: 'Prompts' },
@@ -20,16 +19,18 @@ export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen
   ];
 
   return (
-
     <>
       {isOpen && (
         <div
           className="fixed inset-0 bg-black/40 z-10 sm:hidden"
+          aria-hidden="true"
           onClick={() => setIsOpen(false)}
         />
       )}
 
       <aside
+        id="vault-sidebar"
+        aria-label="Primary navigation"
         className={`
           fixed top-16 left-0 h-[calc(100vh-4rem)] w-64 sm:w-20
           bg-white/70 dark:bg-gray-900/70
@@ -53,9 +54,17 @@ export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen
                     ? 'text-blue-600 bg-blue-100 dark:bg-blue-900/50'
                     : 'text-gray-500 hover:text-gray-900 dark:text-gray-400 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-700'
                   }
+                  focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500
                 `;
             return href ? (
-              <Link key={id} to={href} title={label} className={classes}>
+              <Link
+                key={id}
+                to={href}
+                title={label}
+                aria-label={label}
+                aria-current={active ? 'page' : undefined}
+                className={classes}
+              >
                 {React.createElement(icon, { className: 'w-6 h-6' })}
               </Link>
             ) : (
@@ -64,6 +73,8 @@ export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen
                 type="button"
                 onClick={() => setSelectedTab(id)}
                 title={label}
+                aria-label={label}
+                aria-pressed={active}
                 className={classes}
               >
                 {React.createElement(icon, { className: 'w-6 h-6' })}
@@ -77,12 +88,15 @@ export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen
       <button
         type="button"
         onClick={() => setIsOpen((prev) => !prev)}
+        aria-label={isOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+        aria-expanded={isOpen}
+        aria-controls="vault-sidebar"
         className={`
           fixed top-20 z-30 hidden sm:flex
           items-center justify-center
           p-1 bg-white dark:bg-gray-800
           rounded-full shadow-md
-          focus:outline-none transition-transform duration-300
+          focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 transition-transform duration-300
           ${isOpen ? 'left-20' : 'left-0'}
         `}
       >
@@ -91,6 +105,5 @@ export default function Sidebar({ selectedTab, setSelectedTab, isOpen, setIsOpen
         />
       </button>
     </>
-
   );
 }

@@ -5,6 +5,9 @@ import Button from './Button';
 import TagAnalyticsWithBadges from './TagAnalyticsWithBadges';
 import OnboardingChecklist from './OnboardingChecklist';
 import Input from './Input';
+import { getApiBaseUrl } from '../api/client';
+
+const API_BASE_URL = getApiBaseUrl();
 
 export default function ProfileModal({
   token,
@@ -39,7 +42,7 @@ export default function ProfileModal({
   useEffect(() => {
     async function loadProfile() {
       try {
-        const res = await fetch('/api/profile_get.php', {
+        const res = await fetch(`${API_BASE_URL}/profile_get.php`, {
           headers: { Authorization: `Bearer ${token}` }
         });
         const data = await res.json();
@@ -50,8 +53,8 @@ export default function ProfileModal({
           setRole(data.profile.role || '');
           setPhoto(data.profile.photo || '');
         }
-      } catch (e) {
-        console.error('Failed to load profile', e);
+      } catch {
+        setError('Failed to load profile');
       }
     }
     if (token) {
@@ -78,7 +81,7 @@ export default function ProfileModal({
       return;
     }
     try {
-      const res = await fetch('/api/profile_update.php', {
+      const res = await fetch(`${API_BASE_URL}/profile_update.php`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -104,8 +107,7 @@ export default function ProfileModal({
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (err) {
-      console.error('Failed to save profile', err);
+    } catch {
       setError('Failed to save profile');
     }
   };
@@ -138,10 +140,12 @@ export default function ProfileModal({
       >
         {/* Close button */}
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Close profile modal"
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
         >
-          <FiX className="text-xl" />
+          <FiX className="text-xl" aria-hidden="true" />
         </button>
 
         {/* Profile header with avatar */}
@@ -269,8 +273,9 @@ export default function ProfileModal({
             />
             <Input label="Role" value={role} onChange={(e) => setRole(e.target.value)} />
             <div className="flex flex-col space-y-1">
-              <label className="font-semibold text-sm">Photo</label>
+              <label htmlFor="profile-photo-input" className="font-semibold text-sm">Photo</label>
               <input
+                id="profile-photo-input"
                 type="file"
                 accept="image/*"
                 onChange={handlePhotoChange}

@@ -1,15 +1,17 @@
 <?php
-$host = '127.0.0.1';
-$db   = 'u132120p127267_vault';
-$user = 'u132120p127267_MichaelRedant';
-$password = 'VaultSecure2024!';
+declare(strict_types=1);
 
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$db;charset=utf8mb4", $user, $password);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-    echo json_encode(['success' => 'Database connection OK']);
-} catch (PDOException $e) {
-    http_response_code(500);
-    die(json_encode(['error' => 'Database connection failed: ' . $e->getMessage()]));
+require_once __DIR__ . '/env.php';
+
+header('Content-Type: application/json');
+
+$appEnv = strtolower((string) pv_env('APP_ENV', 'production'));
+if (!in_array($appEnv, ['local', 'development'], true)) {
+    http_response_code(404);
+    echo json_encode(['error' => 'Not found']);
+    exit;
 }
-?>
+
+require_once __DIR__ . '/db.php';
+
+echo json_encode(['success' => true, 'message' => 'Database connection OK']);

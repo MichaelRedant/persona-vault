@@ -71,3 +71,11 @@ cp .env.example .env
 
 # Start development server
 npm run dev
+
+## Maintenance Migration (Workspace Share Expiry)
+
+For databases that still have `workspace_shares` without `expires_at`:
+
+1. Set `ALLOW_MAINTENANCE=1` in `.env`.
+2. Call `POST /api/migrate_workspace_shares_expiry.php` as a global admin user.
+3. Set `ALLOW_MAINTENANCE=0` again after success.

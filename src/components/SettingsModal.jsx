@@ -43,10 +43,12 @@ export default function SettingsModal({ onClose, compactMode, setCompactMode }) 
         onClick={(e) => e.stopPropagation()}
       >
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Close settings modal"
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
         >
-          <FiX className="text-xl" />
+          <FiX className="text-xl" aria-hidden="true" />
         </button>
 
         <h3 className="text-2xl font-bold text-gray-900 dark:text-white mb-4">Settings</h3>
@@ -124,12 +126,14 @@ export default function SettingsModal({ onClose, compactMode, setCompactMode }) 
         {/* Actions */}
         <div className="flex justify-end space-x-2 pt-4">
           <button
+            type="button"
             onClick={onClose}
             className="px-4 py-2 text-sm bg-gray-100 dark:bg-gray-700 text-gray-800 dark:text-white rounded hover:bg-gray-200 dark:hover:bg-gray-600 transition"
           >
             Cancel
           </button>
           <button
+            type="button"
             onClick={handleSave}
             className="px-4 py-2 text-sm bg-blue-600 text-white rounded hover:bg-blue-700 transition"
           >

@@ -1,7 +1,41 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { apiRequest } from '../api/client';
 import { useApiErrorHandler } from './useApiErrorHandler';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
+function normalizeTags(tags) {
+  if (Array.isArray(tags)) {
+    return tags
+      .map((tag) => String(tag).trim())
+      .filter((tag) => tag.length > 0);
+  }
+
+  if (typeof tags === 'string') {
+    return tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+  }
+
+  return [];
+}
+
+function parsePersonas(data) {
+  return data.map((persona) => {
+    const collectionIds = Array.isArray(persona.collection_ids)
+      ? persona.collection_ids.map(Number)
+      : Array.isArray(persona.collectionIds)
+        ? persona.collectionIds.map(Number)
+        : [];
+
+    return {
+      ...persona,
+      favorite: persona.favorite === 1 || persona.favorite === '1' || persona.favorite === true ? 1 : 0,
+      tags: normalizeTags(persona.tags),
+      collection_ids: collectionIds,
+      collectionIds,
+    };
+  });
+}
 
 export function usePersonasApi(token, onShowToast, workspaceId) {
   const [personas, setPersonas] = useState([]);
@@ -10,205 +44,172 @@ export function usePersonasApi(token, onShowToast, workspaceId) {
 
   const handleError = useApiErrorHandler(onShowToast);
 
-  const parsePersonas = (data) =>
-  data.map((p) => ({
-    ...p,
-    favorite: p.favorite === 1 || p.favorite === '1' ? 1 : 0,
-    collectionIds:
-  Array.isArray(p.collection_ids) ? p.collection_ids.map(Number)
-  : Array.isArray(p.collectionIds) ? p.collectionIds.map(Number)
-  : [],
-  }));
-
   const fetchPersonas = useCallback(async () => {
-  setLoading(true);
-  try {
-    const response = await fetch(`${BASE_URL}/personas_get.php?workspace_id=${workspaceId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
+    if (!token || !workspaceId) {
+      setPersonas([]);
+      return [];
+    }
 
-      if (Array.isArray(data)) {
-  setPersonas(parsePersonas(data));
-} else {
-  setPersonas([]);
-  handleError(new Error('Invalid API response'), 'Failed to fetch personas');
-}
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await apiRequest('personas_get.php', {
+        method: 'GET',
+        token,
+        params: { workspace_id: workspaceId },
+      });
+
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid API response');
+      }
+
+      const parsed = parsePersonas(data);
+      setPersonas(parsed);
+      return parsed;
     } catch (err) {
-      console.error('Failed to fetch personas:', err);
       setError(err);
       setPersonas([]);
       handleError(err, 'Failed to fetch personas');
+      return [];
     } finally {
       setLoading(false);
     }
-  }, [handleError, token, workspaceId]);
+  }, [token, workspaceId, handleError]);
 
-  const createPersona = async (name, description, tags = [], collectionIds = []) => {
-  try {
-    const response = await fetch(`${BASE_URL}/personas_create.php`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ name, description, tags, collection_ids: collectionIds, workspace_id: workspaceId })
-    });
-
-    const data = await response.json();
-    if (data.success) {
-      await fetchPersonas();
-    } else {
-      handleError(new Error('API returned failure'), 'Failed to create persona');
-    }
-  } catch (err) {
-    console.error('Failed to create persona:', err);
-    setError(err);
-    handleError(err, 'Failed to create persona');
-  }
-  
-};
-
-
-
-
-  const updatePersona = async (id, name, description, tags = [], collectionIds = []) => {
-  try {
-    // ⬇️ Eerst de bestaande versie bewaren
-    await fetch(`${BASE_URL}/persona_save_revision.php`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ id, workspace_id: workspaceId })
-    });
-    
-
-    // ⬇️ Daarna pas updaten
-    const response = await fetch(`${BASE_URL}/personas_update.php`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ id, name, description, tags, collectionIds, workspace_id: workspaceId  }),
-    });
-    
-
-    const data = await response.json();
-    if (data.success) {
-      await fetchPersonas();
-    } else {
-      handleError(new Error('API returned failure'), 'Failed to update persona');
-    }
-  } catch (err) {
-    console.error('Failed to update persona:', err);
-    setError(err);
-    handleError(err, 'Failed to update persona');
-  }
-};
-
-
-
-  const updatePersonaFavorite = async (id, favorite) => {
-  try {
-    const response = await fetch(`${BASE_URL}/personas_update_favorite.php`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ id, favorite, workspace_id: workspaceId  }),
-    });
-    const data = await response.json();
-    if (data.success) {
-      setPersonas((prev) =>
-        prev.map((p) =>
-          p.id === id
-            ? {
-                ...p,
-                favorite,
-                collection_id:
-                  p.collection_id === null || p.collection_id === undefined
-                    ? null
-                    : Number(p.collection_id), // industry correct → behouden
-              }
-            : p
-        )
-      );
-    } else {
-      handleError(new Error('API returned failure'), 'Failed to update favorite');
-    }
-  } catch (err) {
-    console.error('Failed to update persona favorite:', err);
-    setError(err);
-    handleError(err, 'Failed to update favorite');
-  }
-};
-
-const removePersonaFromCollection = async (personaId, collectionId) => {
-  try {
-    const response = await fetch(`${BASE_URL}/persona_remove_from_collection.php`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ personaId, collectionId, workspace_id: workspaceId }),
-    });
-    const data = await response.json();
-    if (data.success) {
-      await fetchPersonas();
-    } else {
-      handleError(new Error('API returned failure'), 'Failed to remove from collection');
-    }
-  } catch (err) {
-    console.error('Error removing from collection:', err);
-    setError(err);
-    handleError(err, 'Failed to remove from collection');
-  }
-};
-
-
-  const deletePersona = async (id) => {
+  const createPersona = useCallback(async (name, description, tags = [], collectionIds = []) => {
     try {
-      const response = await fetch(`${BASE_URL}/personas_delete.php?id=${id}&workspace_id=${workspaceId}`, {
-
-        method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
+      const data = await apiRequest('personas_create.php', {
+        method: 'POST',
+        token,
+        body: {
+          name,
+          description,
+          tags,
+          collection_ids: collectionIds,
+          workspace_id: workspaceId,
         },
       });
-      const data = await response.json();
-      if (data.success) {
-        setPersonas((prev) => prev.filter((p) => p.id !== id));
-      } else {
-        handleError(new Error('API returned failure'), 'Failed to delete persona');
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to create persona');
       }
+
+      await fetchPersonas();
+      return true;
     } catch (err) {
-      console.error('Failed to delete persona:', err);
+      setError(err);
+      handleError(err, 'Failed to create persona');
+      return false;
+    }
+  }, [token, workspaceId, fetchPersonas, handleError]);
+
+  const updatePersona = useCallback(async (id, name, description, tags = [], collectionIds = []) => {
+    try {
+      await apiRequest('persona_save_revision.php', {
+        method: 'POST',
+        token,
+        body: { id, workspace_id: workspaceId },
+      });
+
+      const data = await apiRequest('personas_update.php', {
+        method: 'POST',
+        token,
+        body: {
+          id,
+          name,
+          description,
+          tags,
+          collectionIds,
+          workspace_id: workspaceId,
+        },
+      });
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to update persona');
+      }
+
+      await fetchPersonas();
+      return true;
+    } catch (err) {
+      setError(err);
+      handleError(err, 'Failed to update persona');
+      return false;
+    }
+  }, [token, workspaceId, fetchPersonas, handleError]);
+
+  const updatePersonaFavorite = useCallback(async (id, favorite) => {
+    try {
+      const data = await apiRequest('personas_update_favorite.php', {
+        method: 'POST',
+        token,
+        body: { id, favorite, workspace_id: workspaceId },
+      });
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to update favorite');
+      }
+
+      setPersonas((previous) =>
+        previous.map((persona) => (persona.id === id ? { ...persona, favorite } : persona))
+      );
+      return true;
+    } catch (err) {
+      setError(err);
+      handleError(err, 'Failed to update favorite');
+      return false;
+    }
+  }, [token, workspaceId, handleError]);
+
+  const removePersonaFromCollection = useCallback(async (personaId, collectionId) => {
+    try {
+      const data = await apiRequest('persona_remove_from_collection.php', {
+        method: 'POST',
+        token,
+        body: { personaId, collectionId, workspace_id: workspaceId },
+      });
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to remove from collection');
+      }
+
+      await fetchPersonas();
+      return true;
+    } catch (err) {
+      setError(err);
+      handleError(err, 'Failed to remove from collection');
+      return false;
+    }
+  }, [token, workspaceId, fetchPersonas, handleError]);
+
+  const deletePersona = useCallback(async (id) => {
+    try {
+      const data = await apiRequest('personas_delete.php', {
+        method: 'DELETE',
+        token,
+        params: { id, workspace_id: workspaceId },
+      });
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to delete persona');
+      }
+
+      setPersonas((previous) => previous.filter((persona) => persona.id !== id));
+      return true;
+    } catch (err) {
       setError(err);
       handleError(err, 'Failed to delete persona');
+      return false;
     }
-  };
+  }, [token, workspaceId, handleError]);
 
   useEffect(() => {
-  if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ')) {
-    console.log('usePersonasApi → Valid token → fetching personas');
-    fetchPersonas();
-  } else {
-    console.log('usePersonasApi → No valid token → skipping personas fetch');
-  }
-}, [fetchPersonas, token, workspaceId]);
-
-
-
-  
+    if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ') && workspaceId) {
+      fetchPersonas();
+    } else {
+      setPersonas([]);
+    }
+  }, [fetchPersonas, token, workspaceId]);
 
   return {
     personas,
@@ -221,6 +222,5 @@ const removePersonaFromCollection = async (personaId, collectionId) => {
     updatePersonaFavorite,
     deletePersona,
     removePersonaFromCollection,
-
   };
 }

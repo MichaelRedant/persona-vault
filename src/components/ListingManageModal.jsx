@@ -1,23 +1,52 @@
 // src/components/ListingManageModal.jsx
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useId } from 'react';
+import Modal from './Modal';
 
-export default function ListingManageModal({ open, onClose, onSave, onDelete, initial = {}, uploadFn }) {
+export default function ListingManageModal({
+  open,
+  onClose,
+  onSave,
+  onDelete,
+  initial = {},
+  uploadFn,
+  onShowToast,
+  itemOptions = {},
+  loadingItemOptions = false,
+  lockItemSelection = false,
+  allowStatusEdit = false,
+}) {
+  const titleId = useId();
+  const descriptionId = useId();
+  const typeId = useId();
+  const sourceItemId = useId();
+  const priceId = useId();
+  const coverId = useId();
+  const headingId = useId();
+  const safeInitial = initial || {};
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [price, setPrice] = useState(0);
   const [itemType, setItemType] = useState('persona');
+  const [itemId, setItemId] = useState('');
   const [coverFileId, setCoverFileId] = useState(null);
+  const [status, setStatus] = useState('active');
   const [busy, setBusy] = useState(false);
 
+  const personaOptions = Array.isArray(itemOptions.personas) ? itemOptions.personas : [];
+  const promptOptions = Array.isArray(itemOptions.prompts) ? itemOptions.prompts : [];
+  const currentOptions = itemType === 'prompt' ? promptOptions : personaOptions;
+  const hasPreselectedItem = Number(safeInitial.item_id) > 0;
+  const isEditingListing = Number(safeInitial.id) > 0;
+
   useEffect(() => {
-    if (initial) {
-      setTitle(initial.title || '');
-      setDescription(initial.description || '');
-      setPrice(initial.price_cents ? initial.price_cents / 100 : 0);
-      setItemType(initial.item_type || 'persona');
-      setCoverFileId(initial.cover_file_id || null);
-    }
-  }, [initial, open]);
+    setTitle(safeInitial.title || '');
+    setDescription(safeInitial.description || '');
+    setPrice(safeInitial.price_cents ? safeInitial.price_cents / 100 : 0);
+    setItemType(safeInitial.item_type || 'persona');
+    setItemId(safeInitial.item_id ? String(safeInitial.item_id) : '');
+    setCoverFileId(safeInitial.cover_file_id || null);
+    setStatus(safeInitial.status || 'active');
+  }, [safeInitial.title, safeInitial.description, safeInitial.price_cents, safeInitial.item_type, safeInitial.item_id, safeInitial.cover_file_id, safeInitial.status, open]);
 
   if (!open) return null;
 
@@ -29,93 +58,165 @@ export default function ListingManageModal({ open, onClose, onSave, onDelete, in
       const res = await uploadFn(file);
       setCoverFileId(res.file_id);
     } catch (err) {
-      alert(err.message || 'Upload failed');
+      onShowToast?.(err.message || 'Upload failed');
     } finally {
       setBusy(false);
     }
   };
 
   const save = () => {
+    const resolvedItemId = hasPreselectedItem ? Number(safeInitial.item_id) : Number(itemId);
+
+    if (!title.trim()) {
+      onShowToast?.('Title is required');
+      return;
+    }
+
+    if (!resolvedItemId && !isEditingListing) {
+      onShowToast?.('Select an item to list');
+      return;
+    }
+
     onSave({
-      ...initial,
-      title,
+      ...safeInitial,
+      title: title.trim(),
       description,
       price_cents: 0,
       item_type: itemType,
+      item_id: resolvedItemId || undefined,
       cover_file_id: coverFileId,
+      ...(allowStatusEdit && isEditingListing ? { status } : {}),
     });
   };
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/40 flex items-center justify-center" onClick={onClose}>
-      <div className="bg-white dark:bg-gray-900 w-full max-w-lg rounded-xl p-6" onClick={e=>e.stopPropagation()}>
-        <h3 className="text-lg font-semibold mb-4">{initial?.id ? 'Edit Listing' : 'New Listing'}</h3>
+    <Modal
+      isOpen={open}
+      onClose={onClose}
+      size="lg"
+      className="w-full max-w-lg rounded-xl"
+      ariaLabelledBy={headingId}
+    >
+      <h3 id={headingId} className="text-lg font-semibold mb-4">{safeInitial.id ? 'Edit Listing' : 'New Listing'}</h3>
         <div className="space-y-4">
           <div>
-            <label className="block text-sm mb-1">Title</label>
+            <label htmlFor={titleId} className="block text-sm mb-1">Title</label>
             <input
-              className="w-full border rounded px-3 py-2 text-sm"
+              id={titleId}
+              className="pv-input text-sm"
               value={title}
               onChange={e=>setTitle(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-sm mb-1">Description</label>
+            <label htmlFor={descriptionId} className="block text-sm mb-1">Description</label>
             <textarea
-              className="w-full border rounded px-3 py-2 text-sm"
+              id={descriptionId}
+              className="pv-input text-sm"
               rows="3"
               value={description}
               onChange={e=>setDescription(e.target.value)}
             />
           </div>
           <div>
-            <label className="block text-sm mb-1">Type</label>
+            <label htmlFor={typeId} className="block text-sm mb-1">Type</label>
             <select
-              className="w-full border rounded px-3 py-2 text-sm"
+              id={typeId}
+              className="pv-input text-sm"
               value={itemType}
-              onChange={e=>setItemType(e.target.value)}
+              onChange={e => {
+                setItemType(e.target.value);
+                if (!hasPreselectedItem) {
+                  setItemId('');
+                }
+              }}
+              disabled={lockItemSelection}
             >
               <option value="persona">Persona</option>
               <option value="prompt">Prompt</option>
             </select>
           </div>
+          {!hasPreselectedItem && !isEditingListing && (
+            <div>
+              <label htmlFor={sourceItemId} className="block text-sm mb-1">Source item</label>
+              <select
+                id={sourceItemId}
+                className="pv-input text-sm"
+                value={itemId}
+                onChange={e => setItemId(e.target.value)}
+                disabled={loadingItemOptions}
+              >
+                <option value="">Select an item...</option>
+                {currentOptions.map((option) => (
+                  <option key={`${option.type}-${option.id}`} value={String(option.id)}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+              {loadingItemOptions && (
+                <p className="text-xs text-gray-500 mt-1">Loading available items...</p>
+              )}
+              {!loadingItemOptions && currentOptions.length === 0 && (
+                <p className="text-xs text-red-500 mt-1">No items available for selected type.</p>
+              )}
+            </div>
+          )}
           <div>
-            <label className="block text-sm mb-1">Price</label>
+            <label htmlFor={priceId} className="block text-sm mb-1">Price</label>
             <input
+              id={priceId}
               type="number"
               min="0"
               value={price}
               disabled
-              className="w-full border rounded px-3 py-2 text-sm bg-gray-50"
+              className="pv-input text-sm opacity-70"
             />
             <p className="text-xs text-gray-500 mt-1">Only free listings are supported for now.</p>
           </div>
+          {allowStatusEdit && isEditingListing && (
+            <div>
+              <label htmlFor="listing-status" className="block text-sm mb-1">Moderation status</label>
+              <select
+                id="listing-status"
+                className="pv-input text-sm"
+                value={status}
+                onChange={e => setStatus(e.target.value)}
+                disabled={busy}
+              >
+                <option value="active">Active</option>
+                <option value="paused">Paused</option>
+                <option value="flagged">Flagged</option>
+                <option value="removed">Removed</option>
+              </select>
+            </div>
+          )}
           <div>
-            <label className="block text-sm mb-1">Cover</label>
-            <input type="file" onChange={handleFile} disabled={busy} />
+            <label htmlFor={coverId} className="block text-sm mb-1">Cover</label>
+            <input id={coverId} type="file" onChange={handleFile} disabled={busy} />
           </div>
         </div>
         <div className="mt-6 flex justify-between">
-          {initial?.id && (
+          {safeInitial.id && (
             <button
               className="text-sm px-3 py-1.5 rounded border border-red-500 text-red-600 hover:bg-red-50"
-              onClick={() => onDelete && onDelete(initial.id)}
+              onClick={() => onDelete && onDelete(safeInitial.id)}
+              aria-label="Delete listing"
             >
               Delete
             </button>
           )}
           <div className="ml-auto space-x-2">
-            <button className="text-sm px-3 py-1.5 rounded border" onClick={onClose}>Cancel</button>
+            <button className="text-sm px-3 py-1.5 rounded border" onClick={onClose} aria-label="Cancel listing changes">Cancel</button>
             <button
               className="text-sm px-3 py-1.5 rounded bg-indigo-600 text-white hover:bg-indigo-700"
               onClick={save}
               disabled={busy}
+              aria-label="Save listing"
             >
               Save
             </button>
           </div>
         </div>
-      </div>
-    </div>
+    </Modal>
   );
 }

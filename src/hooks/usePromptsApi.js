@@ -1,7 +1,31 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { apiRequest } from '../api/client';
 import { useApiErrorHandler } from './useApiErrorHandler';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
+function normalizeTags(tags) {
+  if (Array.isArray(tags)) {
+    return tags
+      .map((tag) => String(tag).trim())
+      .filter((tag) => tag.length > 0);
+  }
+
+  if (typeof tags === 'string') {
+    return tags
+      .split(',')
+      .map((tag) => tag.trim())
+      .filter((tag) => tag.length > 0);
+  }
+
+  return [];
+}
+
+function parsePrompts(data) {
+  return data.map((prompt) => ({
+    ...prompt,
+    favorite: prompt.favorite === 1 || prompt.favorite === '1' || prompt.favorite === true ? 1 : 0,
+    tags: normalizeTags(prompt.tags),
+  }));
+}
 
 export function usePromptsApi(token, onShowToast, workspaceId) {
   const [prompts, setPrompts] = useState([]);
@@ -10,161 +34,136 @@ export function usePromptsApi(token, onShowToast, workspaceId) {
 
   const handleError = useApiErrorHandler(onShowToast);
 
-  const parsePrompts = (data) =>
-    data.map((p) => ({
-      ...p,
-      favorite: p.favorite === 1 || p.favorite === '1' ? 1 : 0,
-      tags:
-        typeof p.tags === 'string'
-          ? p.tags.split(',').map((tag) => tag.trim()).filter((tag) => tag.length > 0)
-          : [],
-    }));
-
   const fetchPrompts = useCallback(async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${BASE_URL}/prompts_get.php?workspace_id=${workspaceId}`, {
-        method: 'GET',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-      });
-      const data = await response.json();
+    if (!token || !workspaceId) {
+      setPrompts([]);
+      return [];
+    }
 
-      if (Array.isArray(data)) {
-        setPrompts(parsePrompts(data));
-      } else {
-        console.error('Expected array for prompts, got:', data);
-        setPrompts([]);
-        handleError(new Error('Invalid API response'), 'Failed to fetch prompts');
+    setLoading(true);
+    setError(null);
+
+    try {
+      const data = await apiRequest('prompts_get.php', {
+        method: 'GET',
+        token,
+        params: { workspace_id: workspaceId },
+      });
+
+      if (!Array.isArray(data)) {
+        throw new Error('Invalid API response');
       }
+
+      const parsed = parsePrompts(data);
+      setPrompts(parsed);
+      return parsed;
     } catch (err) {
-      console.error('Failed to fetch prompts:', err);
       setError(err);
       setPrompts([]);
       handleError(err, 'Failed to fetch prompts');
+      return [];
     } finally {
       setLoading(false);
     }
- }, [handleError, token, workspaceId]);
+  }, [token, workspaceId, handleError]);
 
-  const createPrompt = async (title, content, category, tags = []) => {
+  const createPrompt = useCallback(async (title, content, category, tags = []) => {
     try {
-      const response = await fetch(`${BASE_URL}/prompts_create.php`, {
+      const data = await apiRequest('prompts_create.php', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ title, content, category, tags, workspace_id: workspaceId }),
+        token,
+        body: { title, content, category, tags, workspace_id: workspaceId },
       });
-      const data = await response.json();
-      if (data.success) {
-        await fetchPrompts();
-      } else {
-        handleError(new Error('API returned failure'), 'Failed to create prompt');
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to create prompt');
       }
-    } catch (err) {
-      console.error('Failed to create prompt:', err);
-      setError(err);
-      handleError(err, 'Failed to create prompt');
-    }
-  };
-
-  const updatePrompt = async (id, title, content, category, tags = []) => {
-  try {
-    const response = await fetch(`${BASE_URL}/prompts_update.php`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}`,
-      },
-      body: JSON.stringify({ id, title, content, category, tags, workspace_id: workspaceId }),
-    });
-
-    const data = await response.json();
-    if (data.success) {
-      // 🔁 Save revision after successful update
-      await fetch(`${BASE_URL}/prompt_save_revision.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ id, workspace_id: workspaceId })
-      });
 
       await fetchPrompts();
-    } else {
-      handleError(new Error('API returned failure'), 'Failed to update prompt');
-    }
-  } catch (err) {
-    console.error('Failed to update prompt:', err);
-    setError(err);
-    handleError(err, 'Failed to update prompt');
-  }
-};
-
-
-  const updatePromptFavorite = async (id, favorite) => {
-    try {
-      const response = await fetch(`${BASE_URL}/prompts_update_favorite.php`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`,
-        },
-        body: JSON.stringify({ id, favorite, workspace_id: workspaceId }),
-      });
-      const data = await response.json();
-      if (data.success) {
-        setPrompts((prev) =>
-          prev.map((p) =>
-            p.id === id ? { ...p, favorite } : p
-          )
-        );
-      } else {
-        handleError(new Error('API returned failure'), 'Failed to update favorite');
-      }
+      return true;
     } catch (err) {
-      console.error('Failed to update prompt favorite:', err);
+      setError(err);
+      handleError(err, 'Failed to create prompt');
+      return false;
+    }
+  }, [token, workspaceId, fetchPrompts, handleError]);
+
+  const updatePrompt = useCallback(async (id, title, content, category, tags = []) => {
+    try {
+      await apiRequest('prompt_save_revision.php', {
+        method: 'POST',
+        token,
+        body: { id, workspace_id: workspaceId },
+      });
+
+      const data = await apiRequest('prompts_update.php', {
+        method: 'POST',
+        token,
+        body: { id, title, content, category, tags, workspace_id: workspaceId },
+      });
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to update prompt');
+      }
+
+      await fetchPrompts();
+      return true;
+    } catch (err) {
+      setError(err);
+      handleError(err, 'Failed to update prompt');
+      return false;
+    }
+  }, [token, workspaceId, fetchPrompts, handleError]);
+
+  const updatePromptFavorite = useCallback(async (id, favorite) => {
+    try {
+      const data = await apiRequest('prompts_update_favorite.php', {
+        method: 'POST',
+        token,
+        body: { id, favorite, workspace_id: workspaceId },
+      });
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to update favorite');
+      }
+
+      setPrompts((previous) => previous.map((prompt) => (prompt.id === id ? { ...prompt, favorite } : prompt)));
+      return true;
+    } catch (err) {
       setError(err);
       handleError(err, 'Failed to update favorite');
+      return false;
     }
-  };
+  }, [token, workspaceId, handleError]);
 
-  const deletePrompt = async (id) => {
+  const deletePrompt = useCallback(async (id) => {
     try {
-      const response = await fetch(`${BASE_URL}/prompts_delete.php?id=${id}&workspace_id=${workspaceId}`, {
+      const data = await apiRequest('prompts_delete.php', {
         method: 'DELETE',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-        },
+        token,
+        params: { id, workspace_id: workspaceId },
       });
-      const data = await response.json();
-      if (data.success) {
-        setPrompts((prev) => prev.filter((p) => p.id !== id));
-      } else {
-        handleError(new Error('API returned failure'), 'Failed to delete prompt');
+
+      if (!data?.success) {
+        throw new Error(data?.error || 'Failed to delete prompt');
       }
+
+      setPrompts((previous) => previous.filter((prompt) => prompt.id !== id));
+      return true;
     } catch (err) {
-      console.error('Failed to delete prompt:', err);
       setError(err);
       handleError(err, 'Failed to delete prompt');
+      return false;
     }
-  };
+  }, [token, workspaceId, handleError]);
 
   useEffect(() => {
-  if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ')) {
-    console.log('usePromptsApi → Valid token → fetching prompts');
-    fetchPrompts();
-  } else {
-    console.log('usePromptsApi → No valid token → skipping prompts fetch');
-  }
-}, [fetchPrompts, token]);
-
-  
+    if (token && typeof token === 'string' && token.length > 100 && token.startsWith('eyJ') && workspaceId) {
+      fetchPrompts();
+    } else {
+      setPrompts([]);
+    }
+  }, [fetchPrompts, token, workspaceId]);
 
   return {
     prompts,

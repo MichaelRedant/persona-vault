@@ -1,7 +1,7 @@
 // src/components/UploadModal.jsx
 import { useRef, useState } from 'react';
 
-export default function UploadModal({ open, onClose, onUploaded, uploadFn }) {
+export default function UploadModal({ open, onClose, onUploaded, uploadFn, onShowToast }) {
   const dropRef = useRef(null);
   const [progress, setProgress] = useState(0);
   const [busy, setBusy] = useState(false);
@@ -25,7 +25,7 @@ export default function UploadModal({ open, onClose, onUploaded, uploadFn }) {
       onUploaded(res);
       onClose();
     } catch (err) {
-      alert(err.message || 'Upload failed');
+      onShowToast?.(err.message || 'Upload failed');
     } finally {
       setBusy(false);
     }

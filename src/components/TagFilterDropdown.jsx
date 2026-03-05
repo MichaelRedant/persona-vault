@@ -1,41 +1,61 @@
-import { useState, useEffect, useRef } from 'react';
+import { useEffect, useId, useMemo, useRef, useState } from 'react';
 import { FiFilter } from 'react-icons/fi';
 
 export default function TagFilterDropdown({ tags, activeTags, onTagToggle }) {
-  const uniqueTags = Array.from(new Set(tags.flat()));
+  const uniqueTags = useMemo(() => Array.from(new Set(tags.flat())), [tags]);
   const [isOpen, setIsOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const dropdownRef = useRef(null); // 🟡 → ref for click outside
+  const dropdownRef = useRef(null);
+  const searchRef = useRef(null);
+  const panelId = useId();
 
-  const filteredTags = uniqueTags.filter(tag =>
+  const filteredTags = uniqueTags.filter((tag) =>
     tag.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleClearAll = () => {
-    activeTags.forEach(tag => {
+    activeTags.forEach((tag) => {
       onTagToggle(tag);
     });
   };
 
-  // 🟡 Handle click outside → close dropdown
+  useEffect(() => {
+    if (!isOpen) {
+      return;
+    }
+
+    searchRef.current?.focus();
+  }, [isOpen]);
+
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setIsOpen(false);
       }
     };
+
+    const handleEscape = (event) => {
+      if (event.key === 'Escape') {
+        setIsOpen(false);
+      }
+    };
+
     document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleEscape);
     return () => {
       document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
     };
   }, []);
 
   return (
     <div className="relative inline-block mb-6" ref={dropdownRef}>
-      {/* Trigger button */}
       <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 transition"
+        onClick={() => setIsOpen((previous) => !previous)}
+        aria-haspopup="dialog"
+        aria-expanded={isOpen}
+        aria-controls={panelId}
+        className="flex items-center space-x-2 px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300 hover:bg-blue-200 dark:hover:bg-blue-800 transition focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >
         <FiFilter />
         <span>Filter Tags</span>
@@ -46,33 +66,36 @@ export default function TagFilterDropdown({ tags, activeTags, onTagToggle }) {
         )}
       </button>
 
-      {/* Dropdown */}
       {isOpen && (
         <div
-          className="absolute z-50 mt-2 w-64 rounded-lg shadow-lg bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 focus:outline-none animate-fadeIn border border-gray-200 dark:border-gray-700"
+          id={panelId}
+          role="dialog"
+          aria-modal="false"
+          aria-label="Tag filters"
+          className="absolute z-50 mt-2 w-64 pv-panel focus:outline-none animate-fadeIn"
         >
           <div className="p-3 space-y-2">
-
-            {/* Top bar → Search */}
+            <label htmlFor={`tag-search-${panelId}`} className="sr-only">Search tags</label>
             <input
+              ref={searchRef}
+              id={`tag-search-${panelId}`}
               type="text"
               placeholder="Search tags..."
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-3 py-2 rounded-md border border-gray-300 dark:border-gray-600 text-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition"
+              onChange={(event) => setSearchTerm(event.target.value)}
+              className="pv-input text-sm"
             />
 
-            {/* Clear All link */}
             {activeTags.length > 0 && (
-              <div
-                className="text-xs text-blue-600 dark:text-blue-400 cursor-pointer mt-2 mb-1 hover:underline transition"
+              <button
+                type="button"
+                className="text-xs text-blue-600 dark:text-blue-400 mt-2 mb-1 hover:underline transition"
                 onClick={handleClearAll}
               >
                 Clear All ({activeTags.length})
-              </div>
+              </button>
             )}
 
-            {/* Tag list */}
             <div className="max-h-48 overflow-y-auto space-y-1 pr-1 custom-scrollbar">
               {filteredTags.map((tag) => (
                 <label
@@ -97,7 +120,6 @@ export default function TagFilterDropdown({ tags, activeTags, onTagToggle }) {
         </div>
       )}
 
-      {/* Animation + Scrollbar styling */}
       <style jsx="true">{`
         @keyframes fadeIn {
           from { opacity: 0; transform: scale(0.95); }

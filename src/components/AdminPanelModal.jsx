@@ -44,10 +44,12 @@ export default function AdminPanelModal({ isOpen, onClose, token, onToast }) {
         onClick={(e) => e.stopPropagation()}
       >
         <button
+          type="button"
           onClick={onClose}
+          aria-label="Close admin panel"
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200"
         >
-          <FiX className="text-xl" />
+          <FiX className="text-xl" aria-hidden="true" />
         </button>
 
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Panel</h2>

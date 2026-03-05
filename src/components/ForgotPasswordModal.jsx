@@ -35,7 +35,6 @@ export default function ForgotPasswordModal({ isOpen, onClose }) {
       );
       setEmail('');
     } catch (err) {
-      console.error('Forgot password error:', err);
       setMessage(err.message);
     } finally {
       setLoading(false);

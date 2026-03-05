@@ -3,6 +3,7 @@ header('Content-Type: application/json');
 require 'cors.php';
 require 'db.php';
 require 'auth_check.php'; // ✅ Haalt $user_id en $workspace_id op via JWT
+require_workspace_permission('editor');
 
 $data = json_decode(file_get_contents('php://input'), true);
 $persona_id = $data['personaId'] ?? null;
@@ -15,8 +16,13 @@ if (!$persona_id || !$collection_id) {
 }
 
 // 🔐 Controleer of persona binnen deze workspace en van deze gebruiker is
-$checkStmt = $pdo->prepare("SELECT id FROM personas WHERE id = ? AND user_id = ? AND workspace_id = ?");
-$checkStmt->execute([$persona_id, $user_id, $workspace_id]);
+if ($can_manage_workspace) {
+    $checkStmt = $pdo->prepare("SELECT id FROM personas WHERE id = ? AND workspace_id = ?");
+    $checkStmt->execute([$persona_id, $workspace_id]);
+} else {
+    $checkStmt = $pdo->prepare("SELECT id FROM personas WHERE id = ? AND user_id = ? AND workspace_id = ?");
+    $checkStmt->execute([$persona_id, $user_id, $workspace_id]);
+}
 
 if ($checkStmt->rowCount() === 0) {
     http_response_code(403);

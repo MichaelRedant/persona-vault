@@ -9,8 +9,7 @@ export async function testTokenValid(baseUrl, token) {
 
     const data = await response.json();
     return data?.success === true;
-  } catch (err) {
-    console.error('Token check failed', err);
+  } catch {
     return false;
   }
 }

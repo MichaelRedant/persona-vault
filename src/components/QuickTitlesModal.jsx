@@ -46,10 +46,12 @@ export default function QuickTitlesModal({ isOpen, onClose, personaTitles = [], 
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold text-gray-900 dark:text-white">All Titles</h2>
           <button
+            type="button"
             onClick={onClose}
+            aria-label="Close quick titles modal"
             className="text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200"
           >
-            <FiX className="w-5 h-5" />
+            <FiX className="w-5 h-5" aria-hidden="true" />
           </button>
         </div>
 
@@ -98,11 +100,13 @@ export default function QuickTitlesModal({ isOpen, onClose, personaTitles = [], 
               >
                 <span className="truncate max-w-[85%]">{title}</span>
                 <button
+                  type="button"
                   onClick={() => handleCopy(title)}
+                  aria-label={`Copy title ${title}`}
                   className="text-gray-400 hover:text-gray-600 dark:hover:text-white transition"
                   title="Copy title"
                 >
-                  <FiCopy className="w-4 h-4" />
+                  <FiCopy className="w-4 h-4" aria-hidden="true" />
                 </button>
               </div>
             ))

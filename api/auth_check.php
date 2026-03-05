@@ -39,7 +39,68 @@ if (isset($_GET['workspace_id'])) {
     }
 }
 
-// Fetch admin status for further permission checks
-$stmt = $pdo->prepare('SELECT is_admin FROM users WHERE id = ?');
-$stmt->execute([$user_id]);
-$is_admin = (bool) $stmt->fetchColumn();
+// Fetch global admin status for further permission checks
+$stmtAdmin = $pdo->prepare('SELECT is_admin FROM users WHERE id = ?');
+$stmtAdmin->execute([$user_id]);
+$is_admin = (bool) $stmtAdmin->fetchColumn();
+
+// Resolve workspace role (owner => admin)
+$stmtRole = $pdo->prepare(
+    'SELECT w.owner_id, wm.role
+     FROM workspaces w
+     LEFT JOIN workspace_members wm ON w.id = wm.workspace_id AND wm.user_id = ?
+     WHERE w.id = ?
+     LIMIT 1'
+);
+$stmtRole->execute([$user_id, $workspace_id]);
+$workspaceAccess = $stmtRole->fetch(PDO::FETCH_ASSOC);
+
+if (!$workspaceAccess) {
+    http_response_code(403);
+    echo json_encode(['error' => 'No access to this workspace']);
+    exit;
+}
+
+if ((int)($workspaceAccess['owner_id'] ?? 0) === (int)$user_id) {
+    $workspace_role = 'admin';
+} else {
+    $role = strtolower(trim((string)($workspaceAccess['role'] ?? 'viewer')));
+    $workspace_role = in_array($role, ['viewer', 'editor', 'admin'], true) ? $role : 'viewer';
+}
+
+$can_manage_workspace = $is_admin || $workspace_role === 'admin';
+
+if (!function_exists('require_workspace_permission')) {
+    function require_workspace_permission(string $requiredRole): void
+    {
+        global $is_admin, $workspace_role;
+
+        if ($is_admin) {
+            return;
+        }
+
+        $weights = [
+            'viewer' => 1,
+            'editor' => 2,
+            'admin' => 3,
+        ];
+
+        $required = strtolower(trim($requiredRole));
+        $current = strtolower(trim((string)$workspace_role));
+
+        $requiredWeight = $weights[$required] ?? null;
+        $currentWeight = $weights[$current] ?? 0;
+
+        if ($requiredWeight === null) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Invalid permission configuration']);
+            exit;
+        }
+
+        if ($currentWeight < $requiredWeight) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Insufficient workspace permissions']);
+            exit;
+        }
+    }
+}

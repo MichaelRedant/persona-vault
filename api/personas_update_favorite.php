@@ -3,6 +3,7 @@ header('Content-Type: application/json');
 include 'cors.php';
 require 'auth_check.php'; // ✅ valideert JWT en zet $user_id, $workspace_id
 include 'db.php';
+require_workspace_permission('editor');
 
 // ✅ OPTIONS preflight
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
@@ -21,12 +22,20 @@ if (!$id) {
     exit;
 }
 
-// ✅ Beveiligde update met workspace-scope
-$stmt = $pdo->prepare("
-  UPDATE personas 
-  SET favorite = ?, updated_at = CURRENT_TIMESTAMP 
-  WHERE id = ? AND user_id = ? AND workspace_id = ?
-");
-$stmt->execute([$favorite, $id, $user_id, $workspace_id]);
+if ($can_manage_workspace) {
+    $stmt = $pdo->prepare("
+      UPDATE personas
+      SET favorite = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND workspace_id = ?
+    ");
+    $stmt->execute([$favorite, $id, $workspace_id]);
+} else {
+    $stmt = $pdo->prepare("
+      UPDATE personas
+      SET favorite = ?, updated_at = CURRENT_TIMESTAMP
+      WHERE id = ? AND user_id = ? AND workspace_id = ?
+    ");
+    $stmt->execute([$favorite, $id, $user_id, $workspace_id]);
+}
 
 echo json_encode(['success' => true]);

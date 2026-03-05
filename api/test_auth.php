@@ -1,4 +1,11 @@
 <?php
-include 'auth.php'; // of waar je je token validatie doet
+declare(strict_types=1);
 
-echo json_encode(['success' => true]);
+require __DIR__ . '/cors.php';
+
+header('Content-Type: application/json');
+http_response_code(410);
+echo json_encode([
+    'success' => false,
+    'message' => 'Deprecated endpoint. Use test_token.php.',
+]);

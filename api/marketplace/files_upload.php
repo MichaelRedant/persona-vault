@@ -3,6 +3,7 @@ declare(strict_types=1);
 require __DIR__ . '/../cors.php';
 require __DIR__ . '/../db.php';
 require __DIR__ . '/../auth_check.php';
+require_workspace_permission('editor');
 
 header('Content-Type: application/json');
 

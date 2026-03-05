@@ -1,148 +1,248 @@
-// src/hooks/useMarketplaceApi.js
-const BASE = (import.meta.env.VITE_API_BASE_URL || '/vault/api').replace(/\/$/, '');
+import { useCallback } from 'react';
+import { apiRequest, getApiBaseUrl } from '../api/client';
 
-// kleine helper: veilige JSON parse (soms serveert de host HTML error pages)
-async function safeJson(res) {
-  const ct = (res.headers.get('content-type') || '').toLowerCase();
-  if (ct.includes('application/json')) return res.json();
-  const text = await res.text();
-  try { return JSON.parse(text); } catch { throw new Error(text.slice(0, 200)); }
-}
-
-// eenvoudige retry bij 429/503
-async function fetchWithRetry(url, opts = {}, retries = 2) {
-  let lastErr;
-  for (let attempt = 0; attempt <= retries; attempt++) {
-    try {
-      const res = await fetch(url, opts);
-      if (!res.ok) {
-        // bij 429/503 een korte backoff en nog eens proberen
-        if ((res.status === 429 || res.status >= 500) && attempt < retries) {
-          await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
-          continue;
-        }
-        const body = await safeJson(res).catch(() => ({}));
-        const msg = typeof body === 'string' ? body : (body.error || JSON.stringify(body));
-        throw new Error(`HTTP ${res.status} – ${msg}`);
-      }
-      return res;
-    } catch (e) {
-      lastErr = e;
-      if (attempt === retries) throw e;
-      await new Promise(r => setTimeout(r, 400 * (attempt + 1)));
-    }
-  }
-  throw lastErr;
-}
+const BASE = getApiBaseUrl();
 
 export function useMarketplaceApi(token) {
-  const auth = token ? { Authorization: `Bearer ${token}` } : {};
-
-  // PUBLIC browse → geen auth / geen Content-Type header nodig (voorkomt preflight)
   const searchListings = async (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
-    const url = `${BASE}/marketplace/listings_search.php${qs ? `?${qs}` : ''}`;
+    const data = await apiRequest('marketplace/listings_search.php', {
+      method: 'GET',
+      params,
+      retries: 1,
+    });
 
-    try {
-      const res = await fetchWithRetry(url, { method: 'GET' }, 1);
-      const json = await safeJson(res);
-      if (!json.success) throw new Error(json.error || 'Search failed');
-      return json.items || [];
-    } catch (err) {
-      console.error('Search failed:', err);
-      return [];
+    if (!data?.success) {
+      throw new Error(data?.error || 'Search failed');
     }
+
+    return {
+      items: Array.isArray(data.items) ? data.items : [],
+      meta: data.meta && typeof data.meta === 'object' ? data.meta : {},
+    };
   };
 
   const createListing = async (payload) => {
-    const res = await fetchWithRetry(`${BASE}/marketplace/listings_create.php`, {
+    const data = await apiRequest('marketplace/listings_create.php', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...auth },
-      body: JSON.stringify(payload),
+      token,
+      body: payload,
+      retries: 1,
     });
-    const json = await safeJson(res);
-    if (!json.success) throw new Error(json.error || 'Create failed');
-    return json.id;
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Create failed');
+    }
+
+    return data.id;
   };
 
   const updateListing = async (payload) => {
-    const res = await fetchWithRetry(`${BASE}/marketplace/listings_update.php`, {
+    const data = await apiRequest('marketplace/listings_update.php', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...auth },
-      body: JSON.stringify(payload),
+      token,
+      body: payload,
+      retries: 1,
     });
-    const json = await safeJson(res);
-    if (!json.success) throw new Error(json.error || 'Update failed');
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Update failed');
+    }
   };
 
   const deleteListing = async (listingId) => {
-    const res = await fetchWithRetry(`${BASE}/marketplace/listings_delete.php`, {
+    const data = await apiRequest('marketplace/listings_delete.php', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...auth },
-      body: JSON.stringify({ id: listingId }),
+      token,
+      body: { id: listingId },
+      retries: 1,
     });
-    const json = await safeJson(res);
-    if (!json.success) throw new Error(json.error || 'Delete failed');
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Delete failed');
+    }
+  };
+
+  const reportListing = async (listingId, reason, details = '') => {
+    const data = await apiRequest('marketplace/listings_report.php', {
+      method: 'POST',
+      token,
+      body: { listing_id: listingId, reason, details },
+      retries: 1,
+    });
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Report failed');
+    }
+
+    return data.report_id;
+  };
+
+  const getListingReports = async (status = 'open', limit = 100) => {
+    const data = await apiRequest('marketplace/listings_reports_get.php', {
+      method: 'GET',
+      token,
+      params: { status, limit },
+      retries: 1,
+    });
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Failed to fetch reports');
+    }
+
+    return Array.isArray(data.items) ? data.items : [];
+  };
+
+  const getListingEvents = async (listingId, limit = 25) => {
+    const data = await apiRequest('marketplace/listings_events_get.php', {
+      method: 'GET',
+      token,
+      params: { listing_id: listingId, limit },
+      retries: 1,
+    });
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Failed to fetch listing events');
+    }
+
+    return Array.isArray(data.items) ? data.items : [];
+  };
+
+  const resolveListingReport = async (reportId, reportStatus, listingStatus = null) => {
+    const payload = {
+      report_id: reportId,
+      report_status: reportStatus,
+    };
+
+    if (listingStatus) {
+      payload.listing_status = listingStatus;
+    }
+
+    const data = await apiRequest('marketplace/listings_reports_resolve.php', {
+      method: 'POST',
+      token,
+      body: payload,
+      retries: 1,
+    });
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Failed to resolve report');
+    }
   };
 
   const toggleFavorite = async (listingId) => {
-    const res = await fetchWithRetry(`${BASE}/marketplace/favorites_toggle.php`, {
+    const data = await apiRequest('marketplace/favorites_toggle.php', {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...auth },
-      body: JSON.stringify({ listing_id: listingId }),
+      token,
+      body: { listing_id: listingId },
+      retries: 1,
     });
-    const json = await safeJson(res);
-    if (!json.success) throw new Error(json.error || 'Fav toggle failed');
-    return json.favorite;
+
+    if (!data?.success) {
+      throw new Error(data?.error || 'Fav toggle failed');
+    }
+
+    return data.favorite;
   };
 
-  // multipart upload via XHR om progress te tonen
   const uploadFile = async (file, onProgress) => {
-    const fd = new FormData();
-    fd.append('file', file);
+    const formData = new FormData();
+    formData.append('file', file);
 
     return new Promise((resolve, reject) => {
       const xhr = new XMLHttpRequest();
       xhr.open('POST', `${BASE}/marketplace/files_upload.php`);
-      if (auth.Authorization) xhr.setRequestHeader('Authorization', auth.Authorization);
-      xhr.upload.onprogress = (e) => {
-        if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded * 100) / e.total));
+
+      if (token) {
+        xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+      }
+
+      xhr.upload.onprogress = (event) => {
+        if (event.lengthComputable && onProgress) {
+          onProgress(Math.round((event.loaded * 100) / event.total));
+        }
       };
+
       xhr.onload = () => {
         try {
           const json = JSON.parse(xhr.responseText);
-          if (!json.success) return reject(new Error(json.error || 'Upload failed'));
+          if (!json.success) {
+            reject(new Error(json.error || 'Upload failed'));
+            return;
+          }
           resolve(json);
         } catch {
           reject(new Error('Upload parse error'));
         }
       };
+
       xhr.onerror = () => reject(new Error('Upload error'));
-      xhr.send(fd);
+      xhr.send(formData);
     });
   };
 
   const trackDownload = async (listingId, orderId = null) => {
     try {
-      const res = await fetchWithRetry(`${BASE}/marketplace/download_track.php`, {
+      await apiRequest('marketplace/download_track.php', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', ...auth },
-        body: JSON.stringify({ listing_id: listingId, order_id: orderId }),
+        token,
+        body: { listing_id: listingId, order_id: orderId },
       });
-      await safeJson(res).catch(() => ({}));
-    } catch (e) {
-      // non-blocking
-      console.warn('trackDownload failed:', e.message);
+    } catch {
+      // Non-blocking analytics endpoint
     }
   };
+
+  const getListableItems = useCallback(async (workspaceId) => {
+    if (!workspaceId) {
+      return { personas: [], prompts: [] };
+    }
+
+    const [personasRaw, promptsRaw] = await Promise.all([
+      apiRequest('personas_get.php', {
+        method: 'GET',
+        token,
+        params: { workspace_id: workspaceId },
+        retries: 1,
+      }),
+      apiRequest('prompts_get.php', {
+        method: 'GET',
+        token,
+        params: { workspace_id: workspaceId },
+        retries: 1,
+      }),
+    ]);
+
+    const personas = Array.isArray(personasRaw)
+      ? personasRaw.map((persona) => ({
+          id: Number(persona.id),
+          type: 'persona',
+          label: persona.name || `Persona #${persona.id}`,
+        }))
+      : [];
+
+    const prompts = Array.isArray(promptsRaw)
+      ? promptsRaw.map((prompt) => ({
+          id: Number(prompt.id),
+          type: 'prompt',
+          label: prompt.title || `Prompt #${prompt.id}`,
+        }))
+      : [];
+
+    return { personas, prompts };
+  }, [token]);
 
   return {
     searchListings,
     createListing,
     updateListing,
     deleteListing,
+    reportListing,
+    getListingReports,
+    getListingEvents,
+    resolveListingReport,
     toggleFavorite,
     uploadFile,
     trackDownload,
+    getListableItems,
   };
 }

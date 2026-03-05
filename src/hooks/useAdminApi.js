@@ -1,103 +1,97 @@
 import { useCallback, useState } from 'react';
+import { apiRequest } from '../api/client';
 
 export function useAdminApi(token, onToast) {
   const [users, setUsers] = useState([]);
   const [workspaces, setWorkspaces] = useState([]);
   const [globalStats, setGlobalStats] = useState(null);
 
-  const baseUrl = import.meta.env.VITE_API_BASE_URL;
-
   const fetchUsers = useCallback(async () => {
     try {
-      const res = await fetch(`${baseUrl}/admin_users_get.php`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message || 'Failed to fetch users');
+      const data = await apiRequest('admin_users_get.php', { token });
+      if (!data?.success || !Array.isArray(data.users)) {
+        throw new Error(data?.message || 'Failed to fetch users');
+      }
+
       setUsers(data.users);
       return data.users;
-    } catch (err) {
+    } catch {
       onToast?.('Error fetching users');
-      console.error(err);
       return [];
     }
-  }, [baseUrl, token, onToast]);
+  }, [token, onToast]);
 
   const fetchAllWorkspaces = useCallback(async () => {
     try {
-      const res = await fetch(`${baseUrl}/admin_workspaces_get_all.php`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message || 'Failed to fetch workspaces');
+      const data = await apiRequest('admin_workspaces_get_all.php', { token });
+      if (!data?.success || !Array.isArray(data.workspaces)) {
+        throw new Error(data?.message || 'Failed to fetch workspaces');
+      }
+
       setWorkspaces(data.workspaces);
       return data.workspaces;
-    } catch (err) {
+    } catch {
       onToast?.('Error fetching workspaces');
-      console.error(err);
       return [];
     }
-  }, [baseUrl, token, onToast]);
+  }, [token, onToast]);
 
   const createWorkspaceForUser = useCallback(async (ownerId, name) => {
     try {
-      const res = await fetch(`${baseUrl}/admin_workspace_create.php`, {
+      const data = await apiRequest('admin_workspace_create.php', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
-        },
-        body: JSON.stringify({ owner_id: ownerId, name })
+        token,
+        body: { owner_id: ownerId, name },
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message || 'Failed to create workspace');
+
+      if (!data?.success) {
+        throw new Error(data?.message || 'Failed to create workspace');
+      }
+
       await fetchAllWorkspaces();
       onToast?.('Workspace created');
-    } catch (err) {
+      return true;
+    } catch {
       onToast?.('Failed to create workspace');
-      console.error(err);
+      return false;
     }
-  }, [baseUrl, token, fetchAllWorkspaces, onToast]);
+  }, [token, fetchAllWorkspaces, onToast]);
 
   const deleteWorkspace = useCallback(async (workspaceId) => {
     try {
-      const res = await fetch(`${baseUrl}/admin_workspace_delete.php?id=${workspaceId}`, {
+      const data = await apiRequest('admin_workspace_delete.php', {
         method: 'DELETE',
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
+        token,
+        params: { id: workspaceId },
       });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message || 'Failed to delete workspace');
+
+      if (!data?.success) {
+        throw new Error(data?.message || 'Failed to delete workspace');
+      }
+
       await fetchAllWorkspaces();
       onToast?.('Workspace deleted');
-    } catch (err) {
+      return true;
+    } catch {
       onToast?.('Failed to delete workspace');
-      console.error(err);
+      return false;
     }
-  }, [baseUrl, token, fetchAllWorkspaces, onToast]);
+  }, [token, fetchAllWorkspaces, onToast]);
 
   const fetchGlobalStats = useCallback(async () => {
     try {
-      const res = await fetch(`${baseUrl}/admin_stats_global.php`, {
-        headers: {
-          Authorization: `Bearer ${token}`
-        }
-      });
-      const data = await res.json();
-      if (!data.success) throw new Error(data.message || 'Failed to fetch stats');
+      const data = await apiRequest('admin_stats_global.php', { token });
+      if (!data?.success || !data.stats) {
+        throw new Error(data?.message || 'Failed to fetch stats');
+      }
+
       setGlobalStats(data.stats);
       return data.stats;
-    } catch (err) {
+    } catch {
       onToast?.('Error fetching stats');
-      console.error(err);
       return null;
     }
-  }, [baseUrl, token, onToast]);
+  }, [token, onToast]);
 
   return {
     users,
@@ -107,6 +101,6 @@ export function useAdminApi(token, onToast) {
     fetchAllWorkspaces,
     fetchGlobalStats,
     createWorkspaceForUser,
-    deleteWorkspace
+    deleteWorkspace,
   };
 }

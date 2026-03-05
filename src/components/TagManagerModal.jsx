@@ -8,6 +8,9 @@ export default function TagManagerModal({
   prompts = [],
   onUpdateTags
 }) {
+  const selectTagId = 'tag-manager-select-tag';
+  const renameTagId = 'tag-manager-rename-tag';
+  const mergeIntoId = 'tag-manager-merge-target';
   const [selectedTag, setSelectedTag] = useState('');
   const [newTagName, setNewTagName] = useState('');
   const [mergeTargetTag, setMergeTargetTag] = useState('');
@@ -86,10 +89,12 @@ export default function TagManagerModal({
       >
         {/* Close */}
         <button
+          type="button"
           onClick={handleClose}
+          aria-label="Close tag manager"
           className="absolute top-2 right-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition"
         >
-          <FiX className="text-xl" />
+          <FiX className="text-xl" aria-hidden="true" />
         </button>
 
         {/* Content */}
@@ -114,10 +119,11 @@ export default function TagManagerModal({
 
           {/* Select Tag */}
           <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor={selectTagId} className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Select Tag
             </label>
             <select
+              id={selectTagId}
               value={selectedTag}
               onChange={(e) => setSelectedTag(e.target.value)}
               className="border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"
@@ -133,10 +139,11 @@ export default function TagManagerModal({
 
           {/* Rename */}
           <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor={renameTagId} className="text-sm font-medium text-gray-700 dark:text-gray-300">
               New tag name
             </label>
             <input
+              id={renameTagId}
               type="text"
               value={newTagName}
               onChange={(e) => setNewTagName(e.target.value)}
@@ -147,10 +154,11 @@ export default function TagManagerModal({
 
           {/* Merge */}
           <div className="flex flex-col space-y-2">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            <label htmlFor={mergeIntoId} className="text-sm font-medium text-gray-700 dark:text-gray-300">
               Merge Into
             </label>
             <select
+              id={mergeIntoId}
               value={mergeTargetTag}
               onChange={(e) => setMergeTargetTag(e.target.value)}
               className="border border-gray-300 dark:border-gray-600 rounded px-3 py-2 bg-white dark:bg-gray-700 text-gray-900 dark:text-white"

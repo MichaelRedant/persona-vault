@@ -1,36 +1,44 @@
 import { useState, useCallback } from 'react';
+import { apiRequest } from '../api/client';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost/persona-vault-web/api';
-
-export function usePersonaRevisionsApi(token, workspaceId) {
+export function usePersonaRevisionsApi(token, workspaceId, onShowToast) {
   const [revisions, setRevisions] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
   const fetchRevisions = useCallback(async (personaId) => {
+    if (!personaId || !workspaceId || !token) {
+      setRevisions([]);
+      return [];
+    }
+
     setLoading(true);
+    setError(null);
     try {
-      const response = await fetch(`${BASE_URL}/persona_get_revisions.php?persona_id=${personaId}&workspace_id=${workspaceId}`, {
-        headers: {
-          Authorization: `Bearer ${token}`,
+      const data = await apiRequest('persona_get_revisions.php', {
+        method: 'GET',
+        token,
+        params: {
+          persona_id: personaId,
+          workspace_id: workspaceId,
         },
       });
 
-      const data = await response.json();
-      console.log('📥 Fetched persona revisions:', data);
-
-      if (data.success && Array.isArray(data.revisions)) {
+      if (data?.success && Array.isArray(data.revisions)) {
         setRevisions(data.revisions);
-      } else {
-        console.warn('Unexpected response structure for revisions');
-        setRevisions([]);
+        return data.revisions;
       }
+
+      throw new Error(data?.message || 'Failed to load persona revisions');
     } catch (err) {
-      console.error('❌ Failed to fetch persona revisions:', err);
+      setError(err);
       setRevisions([]);
+      onShowToast?.(err?.message || 'Failed to fetch persona revisions');
+      return [];
     } finally {
       setLoading(false);
     }
-  }, [token, workspaceId]);
+  }, [token, workspaceId, onShowToast]);
 
-  return { revisions, loading, fetchRevisions };
+  return { revisions, loading, error, fetchRevisions };
 }
